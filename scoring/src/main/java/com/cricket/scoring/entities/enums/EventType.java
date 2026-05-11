@@ -1,0 +1,54 @@
+package com.cricket.scoring.entities.enums;
+
+public enum EventType {
+    MATCH_STARTED,
+    INNINGS_STARTED,
+    INNINGS_BREAK,
+    INNINGS_COMPLETED,
+    MATCH_COMPLETED,
+
+    BALL_BOWLED,
+    RUN_SCORED,
+    BOUNDARY_FOUR,
+    SIX_HIT,
+    DOT_BALL,
+    ONE,
+    TWO,
+    THREE,
+    FOUR,
+    FIVE,
+    SIX,
+
+    WIDE,
+    NO_BALL,
+    BYE,
+    LEG_BYE,
+    PENALTY,
+
+    WICKET,
+    WICKET_FALL,
+    RUN_OUT,
+    STUMPING,
+
+    BATTER_RETIRED_HURT,
+    NEW_BATTER,
+    STRIKE_ROTATED,
+
+    END_OVER,
+    OVER_COMPLETED,
+    BOWLER_CHANGE,
+
+    PARTNERSHIP_STARTED,
+    PARTNERSHIP_ENDED,
+
+    TEAM_FIFTY,
+    TEAM_HUNDRED,
+    BATTER_FIFTY,
+    BATTER_HUNDRED,
+    FIVE_WICKET_HAUL,
+
+    BALL_EVENT,
+    WICKET_EVENT,
+    BOWLED, CAUGHT, LBW, STUMPED, HIT_WICKET, OVER_EVENT
+
+}
