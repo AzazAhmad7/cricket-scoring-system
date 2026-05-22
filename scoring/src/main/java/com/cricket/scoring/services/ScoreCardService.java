@@ -27,4 +27,6 @@ public interface ScoreCardService {
     public PhaseBreakDownTeam updatePhaseBreakDown(MatchState matchState, Inning inning, Event event);
 
     public List<FallOfWicket> updateFOW(Long playerId, MatchState matchState, Inning inning, Event event);
+
+    public InningControlMetrices updateInningControlMetrics(MatchState matchState, Inning inning, Event event);
 }

@@ -1,5 +1,6 @@
 package com.cricket.scoring.services;
 
+import com.cricket.scoring.dtos.ImpactPlayerDTO;
 import com.cricket.scoring.dtos.PlayerDTO;
 import com.cricket.scoring.dtos.ResponseFiles.*;
 
@@ -11,4 +12,5 @@ public interface ScoringService {
     public BowlingCard selectNewBowler(Long playerId, Event event);
     public void switchStrike(MatchState matchState, Inning inning);
     public void endOver(Event event);
+    public void impactPlayer(ImpactPlayerDTO impactPlayerDTO, Long matchId);
 }

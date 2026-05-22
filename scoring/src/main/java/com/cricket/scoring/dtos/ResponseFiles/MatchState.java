@@ -1,5 +1,6 @@
 package com.cricket.scoring.dtos.ResponseFiles;
 
+import com.cricket.scoring.entities.enums.MatchStatus;
 import lombok.*;
 
 @Data
@@ -10,16 +11,11 @@ import lombok.*;
 @Builder
 public class MatchState {
     private Long matchId;
-    private String matchStatus;
+    private MatchStatus matchStatus;
     private String matchName;
     private Integer currentInningNumber;
-
-    private Long strikerId;
-
-    private Long nonStrikerId;
-    private Integer nextBattingPosition;
-
-    private Long currentBowlerId;
-
+    private Long battingTeamId;
     private ScoreCard scoreCard;
+    private TargetDTO targetDTO;
+    private MatchResultDTO matchResultDTO;
 }

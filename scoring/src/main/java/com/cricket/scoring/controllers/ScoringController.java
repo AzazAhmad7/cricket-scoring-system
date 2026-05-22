@@ -1,5 +1,6 @@
 package com.cricket.scoring.controllers;
 
+import com.cricket.scoring.dtos.ImpactPlayerDTO;
 import com.cricket.scoring.dtos.ResponseFiles.*;
 import com.cricket.scoring.services.ScoringService;
 import lombok.Getter;
@@ -15,8 +16,12 @@ public class ScoringController {
 
     @PostMapping("/scoreBall")
     public void scoreBall(@RequestBody Event event){
-        System.out.println("EVENT" +event);
         scoringService.scoreBall(event);
+    }
+
+    @PostMapping("/impactPlayer/{matchId}")
+    public void impactPlayer(@RequestBody ImpactPlayerDTO impactPlayerDTO, @PathVariable Long matchId){
+        scoringService.impactPlayer(impactPlayerDTO, matchId);
     }
 
     @PostMapping("/selectBatter/{playerId}")

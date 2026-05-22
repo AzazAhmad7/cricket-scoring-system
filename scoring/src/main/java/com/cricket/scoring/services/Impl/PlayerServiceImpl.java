@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -59,6 +60,18 @@ public class PlayerServiceImpl implements PlayerService {
         Team team = modelMapper.map(teamService.getTeam(teamId), Team.class);
         player.setTeam(team);
         return playerRepository.save(player);
+    }
+
+    @Override
+    public List<Player> assignPlayersToTeams(List<Long> playerIds, Long teamId) {
+        Team team = modelMapper.map(teamService.getTeam(teamId), Team.class);
+        List<Player> players = new ArrayList<>();
+        for(Long playerId : playerIds) {
+            Player player = getPlayerById(playerId);
+            player.setTeam(team);
+            players.add(player);
+        }
+        return players;
     }
 
     @Override

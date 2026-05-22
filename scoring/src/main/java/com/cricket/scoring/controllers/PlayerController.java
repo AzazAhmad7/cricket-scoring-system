@@ -48,6 +48,11 @@ public class PlayerController {
         return ResponseEntity.ok(playerService.assignPlayerToTeam(playerId, teamId));
     }
 
+    @PatchMapping("/teams/{teamId}")
+    public ResponseEntity<List<Player>> assignTeamToPlayers(@RequestBody List<Long> playerIds, @PathVariable Long teamId) {
+        return ResponseEntity.ok(playerService.assignPlayersToTeams(playerIds, teamId));
+    }
+
     @PatchMapping("/{playerId}/remove")
     public ResponseEntity<Player> removePlayerFromTeam(@PathVariable Long playerId){
         return ResponseEntity.ok(playerService.removePlayerFromTeam(playerId));

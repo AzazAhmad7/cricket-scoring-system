@@ -1,7 +1,10 @@
 INSERT INTO teams(name,short_name,country,active)
 VALUES
     ('India','IND','India',true),
-    ('Australia','AUS','Australia',true);
+    ('Australia','AUS','Australia',true),
+    ('Pakistan','PAK','Pakistan',true);
+
+
 
 INSERT INTO venues(
     name,
@@ -81,4 +84,25 @@ VALUES
     ('Josh Philippe','Philippe','WICKET_KEEPER','RIGHT_HAND_BAT',NULL,2,false,true,true),
     ('Sean Abbott','Abbott','ALL_ROUNDER','RIGHT_HAND_BAT','RIGHT_ARM_FAST',2,false,false,true),
     ('Nathan Lyon','Lyon','BOWLER','RIGHT_HAND_BAT','RIGHT_ARM_OFFBREAK',2,false,false,true),
-    ('Spencer Johnson','Johnson','BOWLER','LEFT_HAND_BAT','LEFT_ARM_FAST',2,false,false,true);
+    ('Spencer Johnson','Johnson','BOWLER','LEFT_HAND_BAT','LEFT_ARM_FAST',2,false,false,true),
+
+    ('Babar Azam','Babar','BATTER','RIGHT_HAND_BAT',NULL,3,false,false,true),
+    ('Mohammad Rizwan','Rizwan','WICKET_KEEPER','RIGHT_HAND_BAT',NULL,3,false,true,true),
+    ('Fakhar Zaman','Fakhar','BATTER','LEFT_HAND_BAT','LEFT_ARM_ORTHODOX',3,false,false,true),
+    ('Imam-ul-Haq','Imam','BATTER','LEFT_HAND_BAT',NULL,3,false,false,true),
+    ('Saim Ayub','Saim','BATTER','LEFT_HAND_BAT','LEFT_ARM_ORTHODOX',3,false,false,true),
+    ('Abdullah Shafique','Abdullah','BATTER','RIGHT_HAND_BAT',NULL,3,false,false,true),
+    ('Salman Ali Agha','Salman','ALL_ROUNDER','RIGHT_HAND_BAT','RIGHT_ARM_OFFBREAK',3,false,false,true),
+    ('Shadab Khan','Shadab','ALL_ROUNDER','RIGHT_HAND_BAT','RIGHT_ARM_LEGBREAK',3,false,false,true),
+    ('Mohammad Nawaz','Nawaz','ALL_ROUNDER','LEFT_HAND_BAT','LEFT_ARM_ORTHODOX',3,false,false,true),
+    ('Faheem Ashraf','Faheem','ALL_ROUNDER','LEFT_HAND_BAT','RIGHT_ARM_MEDIUM_FAST',3,false,false,true),
+    ('Shaheen Shah Afridi','Shaheen','BOWLER','LEFT_HAND_BAT','LEFT_ARM_FAST',3,true,false,true),
+    ('Haris Rauf','Rauf','BOWLER','RIGHT_HAND_BAT','RIGHT_ARM_FAST',3,false,false,true),
+    ('Naseem Shah','Naseem','BOWLER','RIGHT_HAND_BAT','RIGHT_ARM_FAST',3,false,false,true),
+    ('Hasan Ali','Hasan','BOWLER','RIGHT_HAND_BAT','RIGHT_ARM_MEDIUM_FAST',3,false,false,true),
+    ('Mohammad Wasim Jr','Wasim Jr','ALL_ROUNDER','RIGHT_HAND_BAT','RIGHT_ARM_FAST',3,false,false,true),
+    ('Abrar Ahmed','Abrar','BOWLER','RIGHT_HAND_BAT','RIGHT_ARM_LEGBREAK',3,false,false,true),
+    ('Usama Mir','Usama','BOWLER','RIGHT_HAND_BAT','RIGHT_ARM_LEGBREAK',3,false,false,true),
+    ('Iftikhar Ahmed','Iftikhar','ALL_ROUNDER','RIGHT_HAND_BAT','RIGHT_ARM_OFFBREAK',3,false,false,true),
+    ('Tayyab Tahir','Tayyab','BATTER','RIGHT_HAND_BAT',NULL,3,false,false,true),
+    ('Kamran Ghulam','Kamran','ALL_ROUNDER','RIGHT_HAND_BAT','RIGHT_ARM_OFFBREAK',3,false,false,true);

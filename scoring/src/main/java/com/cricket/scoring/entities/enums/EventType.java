@@ -24,6 +24,7 @@ public enum EventType {
     BYE,
     LEG_BYE,
     PENALTY,
+    ANY_BALL,
 
     WICKET,
     WICKET_FALL,

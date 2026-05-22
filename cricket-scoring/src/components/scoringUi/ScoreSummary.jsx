@@ -113,7 +113,7 @@ export default function ScoreSummary({ matchState, teams }) {
   if (!matchState || !currentInning) return null;
 
   const battingTeam =
-    matchState.currentInningNumber === 1
+    matchState.battingTeamId === teams?.homeTeam?.id
       ? teams?.homeTeam?.shortName || "IND"
       : teams?.awayTeam?.shortName || "AUS";
 

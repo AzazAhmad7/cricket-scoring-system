@@ -1,10 +1,11 @@
 package com.cricket.scoring.services.Impl;
 
+import com.cricket.scoring.dtos.ImpactPlayerDTO;
 import com.cricket.scoring.dtos.PlayerDTO;
 import com.cricket.scoring.dtos.ResponseFiles.*;
-import com.cricket.scoring.entities.enums.BattingStatus;
-import com.cricket.scoring.entities.enums.EventType;
-import com.cricket.scoring.entities.enums.ExtraType;
+import com.cricket.scoring.dtos.TeamDTO;
+import com.cricket.scoring.entities.Player;
+import com.cricket.scoring.entities.enums.*;
 import com.cricket.scoring.exceptions.ResourceNotFoundException;
 import com.cricket.scoring.exceptions.RuntimeConflictException;
 import com.cricket.scoring.services.JsonFileService;
@@ -34,7 +35,15 @@ public class ScoringServiceImpl implements ScoringService {
     @Override
     public void scoreBall(Event event) {
         MatchState matchState = jsonFileService.getMatchStateFromMemory(event.getMatchId());
+        SetupFile setupFile = jsonFileService.getSetupFileFromMemory(event.getMatchId());
         EventFile eventFile = jsonFileService.getEventsFromMemory(event.getMatchId());
+        if(!matchState.getMatchStatus().equals(MatchStatus.LIVE))
+            throw new RuntimeConflictException("Match status is "+matchState.getMatchStatus()+"! Change it to live for scoring");
+        if((eventFile.getEvents().getLast().getTotalLegalBallsBowled() >= Util.overBallsToBalls(setupFile.getRules().getOvers(), 0))
+        || matchState.getScoreCard().getInnings().get(matchState.getCurrentInningNumber()-1).getScoreSummary().getWickets() >= 10)
+            throw new RuntimeConflictException("Inning ended");
+        if(matchState.getMatchStatus() == MatchStatus.COMPLETED)
+            throw new RuntimeConflictException("Matches ended");
 
         Inning inning = Util.getCurrentInning(matchState);
         jsonFileService.appendEvent(matchState, inning, event, eventFile);
@@ -46,6 +55,7 @@ public class ScoringServiceImpl implements ScoringService {
         scoreCardService.updateBowlingCard(matchState, inning, newEvent);
         scoreCardService.updateOverProgression(matchState, inning, newEvent);
         scoreCardService.updatePhaseBreakDown(matchState, inning, newEvent);
+        scoreCardService.updateInningControlMetrics(matchState, inning, newEvent);
 
         newEvent.setTotalLegalBallsBowled(Util.overBallsToBalls(inning.getScoreSummary().getOvers(), inning.getScoreSummary().getBalls()));
         //SWITCHING STRIKE OF BATTER
@@ -62,37 +72,162 @@ public class ScoringServiceImpl implements ScoringService {
         }
         //UPDATE WICKET OF STATE FILE
         int wickets = inning.getScoreSummary().getWickets() == null ? 0 : inning.getScoreSummary().getWickets();
-        System.out.println(newEvent.getDismissedType());
         if(newEvent.getIsWicket() != null && newEvent.getIsWicket()){
             inning.getScoreSummary().setWickets(wickets+1);
-            if(Util.isBowlerCreditWicket(newEvent.getDismissedType())){
-                scoreCardService.updateFOW(matchState.getStrikerId(), matchState, inning, newEvent);
-                matchState.setStrikerId(null);
+            scoreCardService.updateFOW(event.getDismissedPlayerId(), matchState, inning, newEvent);
+            if(event.getDismissedPlayerId().equals(inning.getStrikerId())){
+                inning.setStrikerId(null);
+            }else if(event.getDismissedPlayerId().equals(inning.getNonStrikerId())){
+                inning.setNonStrikerId(null);
             }
         }
         jsonFileService.updateStateFile(matchState);
-        if(newEvent.getTotalLegalBallsBowled()>0 && newEvent.getTotalLegalBallsBowled() % 6 == 0){
+        BowlerCard currentBowler = matchState.getScoreCard().getInnings().get(matchState.getCurrentInningNumber()-1).getBowlingCard().getBowlers().stream()
+                .filter(bc -> bc.getIsCurrentBowler().equals(true))
+                .findAny()
+                .orElseThrow(() -> new ResourceNotFoundException("Bowler not found"));
+        if(currentBowler.getTotalLegalDeliveriesBowled()>0 && newEvent.getTotalLegalBallsBowled()>0 && newEvent.getTotalLegalBallsBowled() % 6 == 0){
             Event event1 = Event.builder()
                     .matchId(newEvent.getMatchId())
                     .eventType(END_OVER)
                     .build();
             endOver(event1);
         }
+        if (inning.getInningNumber() == 1) {
+
+            int ballsBowled = newEvent.getTotalLegalBallsBowled();
+            int totalBallsToBeBowled = Util.overBallsToBalls(setupFile.getRules().getOvers(), 0);
+
+            // First innings finished: create target for second innings
+            if (ballsBowled >= totalBallsToBeBowled || inning.getScoreSummary().getWickets() >= 10) {
+
+                int targetRuns = inning.getScoreSummary().getRuns() + 1;
+                int totalBalls = Util.overBallsToBalls( setupFile.getRules().getOvers(), 0);
+
+                TargetDTO targetDTO = TargetDTO.builder()
+                        .targetRuns(targetRuns)
+                        .runsRemaining(targetRuns)
+                        .totalBalls(totalBalls)
+                        .ballsRemaining(totalBalls)
+                        .requiredRunRate(Util.requiredRunRate(targetRuns, totalBalls) )
+                        .wicketsRemaining(10)
+                        .targetAchieved(false)
+                        .build();
+
+                matchState.setTargetDTO(targetDTO);
+                jsonFileService.updateStateFile(matchState);
+            }
+
+        } else {
+
+            int ballsBowled = newEvent.getTotalLegalBallsBowled();
+            int totalBallsToBeBowled = Util.overBallsToBalls(setupFile.getRules().getOvers(), 0);
+
+            int runs = inning.getScoreSummary().getRuns();
+            int thisInningWickeets = inning.getScoreSummary().getWickets();
+
+            int target = matchState.getTargetDTO().getTargetRuns();
+            int runsRemaining = target - runs;
+            int wicketsRemaining = 10 - thisInningWickeets;
+
+            boolean targetAchieved = runs >= target;
+            boolean allOut = thisInningWickeets >= 10;
+            boolean oversCompleted = ballsBowled >= totalBallsToBeBowled;
+
+            MatchResultDTO matchResultDTO = null;
+
+            // Determine batting team (current chasing team)
+            Team battingTeam = matchState.getBattingTeamId().equals(setupFile.getTeams().getHomeTeam().getId())
+                            ? setupFile.getTeams().getHomeTeam()
+                            : setupFile.getTeams().getAwayTeam();
+
+            // Determine bowling team (defending team)
+            Team bowlingTeam = matchState.getBattingTeamId().equals(setupFile.getTeams().getHomeTeam().getId())
+                            ? setupFile.getTeams().getAwayTeam()
+                            : setupFile.getTeams().getHomeTeam();
+
+            // --------------------------------------------------
+            // 1. Chasing team wins
+            // --------------------------------------------------
+            if (targetAchieved) {
+
+                matchResultDTO = MatchResultDTO.builder()
+                        .resultType(MatchResultType.WIN)
+                        .winningTeamId(battingTeam.getId())
+                        .winningTeamName(battingTeam.getName())
+                        .marginType(ResultMarginType.WICKETS)
+                        .marginValue(wicketsRemaining)
+                        .inningsCount(null)
+                        .summary(
+                                battingTeam.getName()
+                                        + " won by "
+                                        + wicketsRemaining
+                                        + " wickets"
+                        )
+                        .build();
+            }
+
+            // --------------------------------------------------
+            // 2. Defending team wins
+            // --------------------------------------------------
+            else if ((allOut || oversCompleted) && runs < target - 1) {
+
+                matchResultDTO = MatchResultDTO.builder()
+                        .resultType(MatchResultType.WIN)
+                        .winningTeamId(bowlingTeam.getId())
+                        .winningTeamName(bowlingTeam.getName())
+                        .marginType(ResultMarginType.RUNS)
+                        .marginValue(runsRemaining)
+                        .inningsCount(null)
+                        .summary(
+                                bowlingTeam.getName()
+                                        + " won by "
+                                        + runsRemaining
+                                        + " runs"
+                        )
+                        .build();
+            }
+
+            // --------------------------------------------------
+            // 3. Match tied
+            // --------------------------------------------------
+            else if ((allOut || oversCompleted) && runs == target - 1) {
+
+                matchResultDTO = MatchResultDTO.builder()
+                        .resultType(MatchResultType.TIE)
+                        .winningTeamId(null)
+                        .winningTeamName(null)
+                        .marginType(null)
+                        .marginValue(null)
+                        .inningsCount(null)
+                        .summary("Match tied")
+                        .build();
+            }
+
+            // Save result if match is finished
+            if (matchResultDTO != null) {
+                setupFile.getMatchInfo().setStatus(MatchStatus.COMPLETED);
+                matchState.setMatchStatus(MatchStatus.COMPLETED);
+                matchState.setMatchResultDTO(matchResultDTO);
+                jsonFileService.updateStateFile(matchState);
+            }
+        }
         jsonFileService.createEventFile(matchState, jsonFileService.getEventsFromMemory(event.getMatchId()));
     }
 
     @Override
     public BatterCard selectNewBatter(Long playerId, Event event) {
-        System.out.println("PlayerScoring "+playerId+" "+event);
         MatchState matchState = jsonFileService.getMatchStateFromMemory(event.getMatchId());
         EventFile eventFile = jsonFileService.getEventsFromMemory(event.getMatchId());
+        if(!matchState.getMatchStatus().equals(MatchStatus.LIVE))
+            throw new RuntimeConflictException("Match status is "+matchState.getMatchStatus()+"! Change it to live for scoring");
+        Inning inning = Util.getCurrentInning(matchState);
 
-        if(matchState.getStrikerId() != null && matchState.getNonStrikerId() != null)
+        if(inning.getStrikerId() != null && inning.getNonStrikerId() != null)
             throw new RuntimeConflictException("Both the Players are not out");
-        if(playerId.equals(matchState.getStrikerId()) || playerId.equals(matchState.getNonStrikerId())) {
+        if(playerId.equals(inning.getStrikerId()) || playerId.equals(inning.getNonStrikerId())) {
             throw new RuntimeConflictException("Player already batting");
         }
-        Inning inning = Util.getCurrentInning(matchState);
         List<BatterCard> bcPlayers = inning.getBattingCard().getBatters();
         BatterCard batterCard = bcPlayers.stream().filter(plyr -> plyr.getBatter().getPlayerId().equals(playerId)).findAny().orElseThrow(()->new ResourceNotFoundException("Player not found in Battercard"));
         if(batterCard.getDismissal().getStatus() == BattingStatus.OUT){
@@ -100,12 +235,12 @@ public class ScoringServiceImpl implements ScoringService {
         }
         //creating partnership
         scoreCardService.createPartnershipCard(playerId,matchState, inning,event);
-        int nextBatPosition = matchState.getNextBattingPosition() == null ? 1 : matchState.getNextBattingPosition();
-        if (matchState.getStrikerId() == null) {
-            matchState.setStrikerId(playerId);
+        int nextBatPosition = inning.getNextBattingPosition() == null ? 1 : inning.getNextBattingPosition();
+        if (inning.getStrikerId() == null) {
+            inning.setStrikerId(playerId);
             batterCard.setOnStrike(true);
-        } else if (matchState.getNonStrikerId() == null) {
-            matchState.setNonStrikerId(playerId);
+        } else if (inning.getNonStrikerId() == null) {
+            inning.setNonStrikerId(playerId);
             batterCard.setOnStrike(false);
         }
         //UPDATING CONTEXT METRICS OF PLAYER
@@ -119,7 +254,7 @@ public class ScoringServiceImpl implements ScoringService {
         if(batterCard.getBatter().getBattingPosition() == null){
             batterCard.getBatter().setBattingPosition(nextBatPosition);
         }
-        matchState.setNextBattingPosition(nextBatPosition+1);
+        inning.setNextBattingPosition(nextBatPosition+1);
         jsonFileService.createMatchStateFile(matchState);
         jsonFileService.appendEvent(matchState, inning, event, eventFile);
         jsonFileService.createEventFile(matchState, eventFile);
@@ -127,10 +262,12 @@ public class ScoringServiceImpl implements ScoringService {
     }
 
     public BowlingCard selectNewBowler(Long playerId, Event event) {
-        System.out.println("Batter Id "+playerId+" event "+event);
         MatchState matchState = jsonFileService.getMatchStateFromMemory(event.getMatchId());
+        if(!matchState.getMatchStatus().equals(MatchStatus.LIVE))
+            throw new RuntimeConflictException("Match status is "+matchState.getMatchStatus()+"! Change it to live for scoring");
         SetupFile setupFile = jsonFileService.getSetupFileFromMemory(event.getMatchId());
         EventFile eventFile = jsonFileService.getEventsFromMemory(event.getMatchId());
+        Inning inning = Util.getCurrentInning(matchState);
 
         Playing11 bowlingTeamPlaying11 = setupFile.getTeams().getBattingTeamId().equals(setupFile.getTeams().getHomeTeam().getId())
                         ? setupFile.getSquads().getAwayTeamPlaying11()
@@ -146,12 +283,12 @@ public class ScoringServiceImpl implements ScoringService {
                         new ResourceNotFoundException(
                                 "Player not found in playing 11 with id " + playerId
                         ));
-        if(playerId.equals(matchState.getCurrentBowlerId())){
+        if(playerId.equals(inning.getCurrentBowlerId())){
             throw new RuntimeConflictException(
                     "Bowler cannot bowl consecutive overs"
             );
         }
-        Inning inning = Util.getCurrentInning(matchState);
+
 
         List<BowlerCard> bowlers = inning.getBowlingCard().getBowlers();
 
@@ -184,11 +321,11 @@ public class ScoringServiceImpl implements ScoringService {
             bowlers.add(newBowler);
         }
         for(BowlerCard bowlerCard : bowlers){
-            if(bowlerCard.getBowler().getPlayerId().equals(matchState.getCurrentBowlerId())){
+            if(bowlerCard.getBowler().getPlayerId().equals(inning.getCurrentBowlerId())){
                 bowlerCard.setIsCurrentBowler(false);
             }
         }
-        matchState.setCurrentBowlerId(playerId);
+        inning.setCurrentBowlerId(playerId);
         scoreCardService.createOverProgression(matchState,inning,event);
         jsonFileService.createMatchStateFile(matchState);
         jsonFileService.appendEvent(matchState, inning, event, eventFile);
@@ -199,8 +336,10 @@ public class ScoringServiceImpl implements ScoringService {
     public void updateTeamScore(Event event, MatchState matchState, Inning inning){
         //UPDATING IN SCORE CARD
         //UPDATE RUNS OF STATE FILE
+        if(!matchState.getMatchStatus().equals(MatchStatus.LIVE))
+            throw new RuntimeConflictException("Match status is "+matchState.getMatchStatus()+"! Change it to live for scoring");
 
-        if(matchState.getStrikerId() == null || matchState.getNonStrikerId() == null || matchState.getCurrentBowlerId() == null){
+        if(inning.getStrikerId() == null || inning.getNonStrikerId() == null || inning.getCurrentBowlerId() == null){
             throw new RuntimeConflictException("Select Batter and Bowler");
         }
         int currentRuns = inning.getScoreSummary().getRuns() == null ? 0 : inning.getScoreSummary().getRuns();
@@ -235,40 +374,72 @@ public class ScoringServiceImpl implements ScoringService {
             case PENALTY:
                 inning.getExtras().setPenalty(penaltiesRuns + subExtra);
                 break;
-            default:
-                int overs = inning.getScoreSummary().getOvers() == null ? 0 : inning.getScoreSummary().getOvers();
-                inning.getScoreSummary().setBalls(thisOverBalls+1);
-                event.setBallInOver(thisOverBalls+1);
-                if(inning.getScoreSummary().getBalls() == 6){
-                    inning.getScoreSummary().setOvers(overs+1);
-                    inning.getScoreSummary().setBalls(0);
-
-                    event.setOversCompleted(overs+1);
-                    event.setBallInOver(0);
-                    switchStrike(matchState, inning);
+            case ANY_BALL:
+                if(event.getExtraType() == ExtraType.WIDE){
+                    inning.getExtras().setWides(wideRuns + event.getExtrasRuns());
+                    if(event.getSubExtraType() != null && event.getSubExtraType() == ExtraType.BYE){
+                        inning.getExtras().setByes(byesRuns + subExtra);
+                    }else{
+                        inning.getExtras().setLegByes(legByesRuns + subExtra);
+                    }
+                }else if(event.getExtraType() == ExtraType.NO_BALL){
+                    int extraRun = event.getExtrasRuns() == null ? 0 : event.getExtrasRuns();
+                    inning.getExtras().setNoBalls(noBallRuns + extraRun);
+                    if(event.getSubExtraType() != null && event.getSubExtraType() == ExtraType.BYE){
+                        inning.getExtras().setByes(byesRuns + subExtra);
+                    }else{
+                        inning.getExtras().setLegByes(legByesRuns + subExtra);
+                    }
+                }else if(event.getExtraType() == ExtraType.BYE){
+                    inning.getExtras().setByes(byesRuns + subExtra);
+                }else if(event.getExtraType() == ExtraType.LEG_BYE){
+                    inning.getExtras().setLegByes(legByesRuns + subExtra);
                 }
+                break;
         }
-        inning.getExtras().setTotal(wideRuns+noBallRuns+byesRuns+legByesRuns+penaltiesRuns);
+        if(event.getExtraType() != ExtraType.WIDE && event.getExtraType() != ExtraType.NO_BALL && event.getExtraType() != ExtraType.PENALTY){
+            int overs = inning.getScoreSummary().getOvers() == null ? 0 : inning.getScoreSummary().getOvers();
+            inning.getScoreSummary().setBalls(thisOverBalls+1);
+            event.setBallInOver(thisOverBalls+1);
+            if(inning.getScoreSummary().getBalls() == 6){
+                inning.getScoreSummary().setOvers(overs+1);
+                inning.getScoreSummary().setBalls(0);
+
+                event.setOversCompleted(overs+1);
+                event.setBallInOver(0);
+                switchStrike(matchState, inning);
+            }
+        }
+        inning.getExtras().setTotal(
+                (inning.getExtras().getWides() == null ? 0 : inning.getExtras().getWides()) +
+                        (inning.getExtras().getNoBalls() == null ? 0 : inning.getExtras().getNoBalls()) +
+                        (inning.getExtras().getByes() == null ? 0 : inning.getExtras().getByes()) +
+                        (inning.getExtras().getLegByes() == null ? 0 : inning.getExtras().getLegByes()) +
+                        (inning.getExtras().getPenalty() == null ? 0 : inning.getExtras().getPenalty())
+        );
         inning.getScoreSummary().setRunRate(Util.calculateRunRate(inning.getScoreSummary().getRuns(), (inning.getScoreSummary().getOvers()*6)+inning.getScoreSummary().getBalls()));
     }
 
     public void switchStrike(MatchState matchState, Inning inning){
-        Long strikerId = matchState.getStrikerId();
-        Long nonStrikerId = matchState.getNonStrikerId();
+        Long strikerId = inning.getStrikerId();
+        Long nonStrikerId = inning.getNonStrikerId();
 
         List<BatterCard> batters = inning.getBattingCard().getBatters();
         for(BatterCard batter : batters){
-            if(batter.getBatter().getPlayerId().equals(matchState.getStrikerId()) || batter.getBatter().getPlayerId().equals(matchState.getNonStrikerId())){
+            if(batter.getBatter().getPlayerId().equals(inning.getStrikerId()) || batter.getBatter().getPlayerId().equals(inning.getNonStrikerId())){
                 batter.setOnStrike(!batter.getOnStrike());
             }
         }
 
-        matchState.setStrikerId(nonStrikerId);
-        matchState.setNonStrikerId(strikerId);
+        inning.setStrikerId(nonStrikerId);
+        inning.setNonStrikerId(strikerId);
     }
     @Override
     public void endOver(Event event) {
         MatchState matchState = jsonFileService.getMatchStateFromMemory(event.getMatchId());
+        if(!matchState.getMatchStatus().equals(MatchStatus.LIVE))
+            throw new RuntimeConflictException("Match status is "+matchState.getMatchStatus()+"! Change it to live for scoring");
+
         EventFile eventFile = jsonFileService.getEventsFromMemory(event.getMatchId());
 
         if(eventFile.getEvents().getLast().getBowlerId() == null) throw  new RuntimeConflictException("Bowler is not selected");
@@ -276,5 +447,46 @@ public class ScoringServiceImpl implements ScoringService {
         Inning inning = Util.getCurrentInning(matchState);
         jsonFileService.appendEvent(matchState, inning, event, eventFile);
         jsonFileService.createMatchStateFile(matchState);
+    }
+
+    @Override
+    public void impactPlayer(ImpactPlayerDTO impactPlayerDTO, Long matchId) {
+        SetupFile setupFile = jsonFileService.loadSetupFile(matchId);
+        Substitutes substitutes;
+        Playing11 playing11;
+        boolean isHomeTeam = false;
+        if(impactPlayerDTO.getTeamId().equals(setupFile.getTeams().getHomeTeam().getId())){
+            setupFile.getSquads().setHomeTeamImpactPlayerDTO(impactPlayerDTO);
+            substitutes = setupFile.getSquads().getHomeTeamSubstitutes();
+            playing11 = setupFile.getSquads().getHomeTeamPlaying11();
+            isHomeTeam = true;
+        }else{
+            setupFile.getSquads().setHomeTeamImpactPlayerDTO(impactPlayerDTO);
+            substitutes = setupFile.getSquads().getAwayTeamSubstitutes();
+            playing11 = setupFile.getSquads().getAwayTeamPlaying11();
+        }
+        PlayerDTO playerIn = substitutes.getPlayers()
+                .stream()
+                .filter(plyr -> plyr.getId().equals(impactPlayerDTO.getImpactInPlayerId()))
+                .findAny()
+                .orElseThrow(()->new ResourceNotFoundException("Player not found in substitues"));
+        PlayerDTO playerOut = playing11.getPlayers()
+                .stream()
+                .filter(plyr -> plyr.getId().equals(impactPlayerDTO.getImpactOutPlayerId()))
+                .findAny()
+                .orElseThrow(()->new ResourceNotFoundException("Player not found in playing11"));
+
+        substitutes.getPlayers().remove(playerIn);
+        playing11.getPlayers().add(playerIn);
+        playing11.getPlayers().remove(playerOut);
+        substitutes.getPlayers().add(playerOut);
+        if(isHomeTeam){
+            setupFile.getSquads().setHomeTeamPlaying11(playing11);
+            setupFile.getSquads().setHomeTeamSubstitutes(substitutes);
+        }else{
+            setupFile.getSquads().setAwayTeamPlaying11(playing11);
+            setupFile.getSquads().setAwayTeamSubstitutes(substitutes);
+        }
+        jsonFileService.updateSetUpFile(setupFile);
     }
 }

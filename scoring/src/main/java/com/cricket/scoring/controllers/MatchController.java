@@ -1,11 +1,9 @@
 package com.cricket.scoring.controllers;
 
-import com.cricket.scoring.dtos.CreateMatchRequest;
-import com.cricket.scoring.dtos.CreateMatchResponse;
-import com.cricket.scoring.dtos.MatchDTO;
+import com.cricket.scoring.dtos.*;
 import com.cricket.scoring.dtos.ResponseFiles.MatchAllData;
 import com.cricket.scoring.dtos.ResponseFiles.SetupFile;
-import com.cricket.scoring.dtos.UpdateMatchRequest;
+import com.cricket.scoring.entities.enums.MatchStatus;
 import com.cricket.scoring.services.JsonFileService;
 import com.cricket.scoring.services.MatchService;
 import lombok.RequiredArgsConstructor;
@@ -27,10 +25,19 @@ public class MatchController {
     public ResponseEntity<MatchAllData> createMatch(@RequestBody CreateMatchRequest request){
         return new ResponseEntity<>(matchService.createMatch(request), HttpStatus.CREATED) ;
     }
+    @PostMapping("/{matchId}/innings")
+    public ResponseEntity<MatchAllData> changeInning(@PathVariable Long matchId){
+        return new ResponseEntity<>(matchService.changeInning(matchId), HttpStatus.OK);
+    }
 
     @PatchMapping("/{matchId}")
     public ResponseEntity<SetupFile> updateMatch(@PathVariable Long matchId,@RequestBody CreateMatchRequest request){
         return ResponseEntity.ok(matchService.updateMatch(matchId, request));
+    }
+
+    @PutMapping("/{matchId}/status")
+    public ResponseEntity<MatchAllData> updateMatchStatus(@PathVariable Long matchId, @RequestBody UpdateMatchStatusDTO updateMatchStatusDTO){
+        return ResponseEntity.ok(matchService.updateMatchStatus(matchId, updateMatchStatusDTO.getMatchStatus()));
     }
 
     @GetMapping("/{id}")
@@ -39,7 +46,7 @@ public class MatchController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Long>> getAllMatches(){
+    public ResponseEntity<List<MatchDTO>> getAllMatches(){
         return ResponseEntity.ok(matchService.getAllMatches());
     }
 

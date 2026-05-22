@@ -36,4 +36,12 @@ public class Event {
     private DismissalType dismissedType;
     private String dismissalText;
     private String ballOutCome;
+
+    //FOR USE OF ANY_BALL
+    private Boolean isNoBallAnyBall;
+    private Boolean isWideAnyBall;
+    private Boolean isByeAnyBall;
+    private Boolean isLegByeAnyBall;
+    private Integer runsOfByeAnyBall;
+    private Integer runsOffBatAnyBall;
 }

@@ -49,6 +49,8 @@ public class CreateMatchRequest {
 
     private Boolean dlsEnabled;
 
+    private Boolean impactPlayerEnabled;
+
 
     // Powerplay
     private Integer powerplayStartOver;

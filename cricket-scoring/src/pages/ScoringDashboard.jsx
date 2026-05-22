@@ -1,29 +1,34 @@
 import { useEffect, useState } from "react";
-import Sidebar from "../components/Sidebar";
-import Header from "../components/Header";
-import ScoreSummary from "../components/ScoreSummary";
-import NextBallControls from "../components/NextBallControls";
-import BallInfo from "../components/BallInfo";
-import PartnershipCard from "../components/PartnershipCard";
-import FallOfWickets from "../components/FallOfWickets";
-import OverHistory from "../components/OverHistory";
-import Squad from "../components/Squad";
-import MatchInfo from "../components/MatchInfo";
+import Sidebar from "../components/scoringUi/Sidebar";
+import Header from "../components/scoringUi/Header";
+import ScoreSummary from "../components/scoringUi/ScoreSummary";
+import NextBallControls from "../components/scoringUi/NextBallControls";
+import BallInfo from "../components/scoringUi/BallInfo";
+import PartnershipCard from "../components/scoringUi/PartnershipCard";
+import FallOfWickets from "../components/scoringUi/FallOfWickets";
+import OverHistory from "../components/scoringUi/OverHistory";
+import Squad from "../components/scoringUi/Squad";
+import MatchInfo from "../components/scoringUi/MatchInfo";
+import InningsInsights from "../components/scoringUi/InningsInsights";
 import {
   getMatchAllData,
   scoreBall,
   logNewBatter,
   logNewBowler,
   endOver,
+  changeInning,
 } from "../services/api";
+import { useParams } from "react-router-dom";
 
 export default function ScoringDashboard() {
+  const { matchId } = useParams();
   const [matchAllData, setMatchAllData] = useState(null);
   const [matchData, setMatchData] = useState(null);
   const [matchState, setMatchState] = useState(null);
 
   const fetchMatch = async () => {
-    const res = await getMatchAllData(1);
+    console.log("match Id ", matchId);
+    const res = await getMatchAllData(matchId);
     setMatchAllData(res.data);
     setMatchData(res.data.setupFile);
     setMatchState(res.data.matchState);
@@ -35,6 +40,7 @@ export default function ScoringDashboard() {
 
   const handleBallEvent = async (thisEventData) => {
     // If a simple string is passed, e.g. "ONE", "FOUR"
+    console.log(thisEventData);
     const event =
       typeof thisEventData === "string"
         ? {
@@ -48,6 +54,15 @@ export default function ScoringDashboard() {
             dismissedType: thisEventData.dismissedType,
             runs: thisEventData.runs,
             isWicket: thisEventData.isWicket,
+            dismissedPlayerId: thisEventData.dismissedPlayerId,
+
+            //any ball extra runs
+            isWideAnyBall: thisEventData.isWide,
+            isNoBallAnyBall: thisEventData.isNoBall,
+            isByeAnyBall: thisEventData.isBye,
+            isLegByeAnyBall: thisEventData.isLegBye,
+            runsOfByeAnyBall: thisEventData.runsOfBye,
+            runsOffBatAnyBall: thisEventData.runsOfBat,
           };
 
     console.log("Event to send:", event);
@@ -62,6 +77,13 @@ export default function ScoringDashboard() {
       eventType: "END_OVER",
     });
 
+    await fetchMatch();
+  };
+
+  const handleChangeInning = async () => {
+    await changeInning({
+      matchId: matchData.matchInfo.matchId,
+    });
     await fetchMatch();
   };
 
@@ -110,6 +132,7 @@ export default function ScoringDashboard() {
                   matchData={matchData}
                   matchAllData={matchAllData}
                   onEndOver={handleEndOverEvent}
+                  onNextInning={handleChangeInning}
                   onSelectNewBatter={(batter) => {
                     handleNewBatterEvent({
                       eventType: "NEW_BATTER",
@@ -125,7 +148,10 @@ export default function ScoringDashboard() {
                 />
               </div>
               <div className="col-span-4">
-                <BallInfo matchData={matchData} matchState={matchState} />
+                <InningsInsights
+                  matchData={matchData}
+                  matchState={matchState}
+                />
               </div>
             </div>
 
@@ -137,10 +163,21 @@ export default function ScoringDashboard() {
           </div>
 
           {/* RIGHT (3 cols) */}
-          <div className="col-span-3 flex flex-col gap-3 overflow-auto">
-            <OverHistory matchState={matchState} />
-            <PartnershipCard matchState={matchState} />
-            <FallOfWickets matchState={matchState} />
+          <div className="col-span-3 flex flex-col gap-3 overflow-auto min-h-0">
+            {/* Fixed-height cards to prevent one card from pushing others out */}
+            <div className="max-h-72 overflow-y-auto flex-shrink-0">
+              <OverHistory matchState={matchState} />
+            </div>
+            <div className="flex-shrink-0">
+              <PartnershipCard matchState={matchState} />
+            </div>
+            <div className="max-h-64 overflow-y-auto flex-shrink-0">
+              <FallOfWickets matchState={matchState} />
+            </div>
+
+            <div className="flex-shrink-0">
+              <BallInfo matchData={matchData} matchState={matchState} />
+            </div>
           </div>
         </div>
       </div>

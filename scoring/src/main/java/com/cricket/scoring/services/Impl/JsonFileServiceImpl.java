@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class JsonFileServiceImpl implements JsonFileService {
 
-    private final Map<Long, MatchAllData> matchAllDataMap = new ConcurrentHashMap<>();
+    private static final Map<Long, MatchAllData> matchAllDataMap = new ConcurrentHashMap<>();
 
     @Override
     public void createSetupFile(SetupFile setupFile) {
@@ -97,7 +97,6 @@ public class JsonFileServiceImpl implements JsonFileService {
     @Override
     public void appendEvent(MatchState matchState, Inning inning, Event event, EventFile eventFile) {
         List<Event> events = eventFile.getEvents();
-        System.out.println(event);
 
         Integer runsOfBat = null;
         boolean isLegalDelivery = true;
@@ -105,6 +104,10 @@ public class JsonFileServiceImpl implements JsonFileService {
         boolean isWicket = false;
         Long dismissedPlayerId = null;
         Integer eventNumber = null;
+        ExtraType extraType = null;
+        Integer extraRuns = null;
+        ExtraType subExtraType = null;
+        Integer subExtraRuns = null;
 
         switch (event.getEventType()) {
             case DOT_BALL -> runsOfBat = 0;
@@ -116,17 +119,82 @@ public class JsonFileServiceImpl implements JsonFileService {
             case SIX -> runsOfBat = 6;
             case WICKET -> {
                 isWicket = true;
-                dismissedPlayerId = matchState.getStrikerId();
+                dismissedPlayerId = event.getDismissedPlayerId();
             }
-            case WIDE -> isLegalDelivery = false;
+            case WIDE -> {
+                isLegalDelivery = false;
+                extraType = ExtraType.WIDE;
+                extraRuns = 1;
+            }
             case NO_BALL -> {
                 isLegalDelivery = false;
                 isFreeHit = true;
+                extraType = ExtraType.NO_BALL;
+                extraRuns = 1;
+            }
+            case BYE -> {
+                subExtraRuns = 1;
+                extraType = ExtraType.BYE;
+            }
+            case LEG_BYE -> {
+                subExtraRuns = 1;
+                extraType = ExtraType.LEG_BYE;
+            }
+            case ANY_BALL -> {
+                if(event.getIsWideAnyBall()){
+                    isLegalDelivery = false;
+                    extraType = ExtraType.WIDE;
+                    extraRuns = 1;
+                    if(event.getIsByeAnyBall()){
+                        subExtraType = ExtraType.BYE;
+                    }else if(event.getIsLegByeAnyBall()){
+                        subExtraType = ExtraType.LEG_BYE;
+                    }
+                    runsOfBat =event.getRunsOffBatAnyBall() == null ? 0 : event.getRunsOffBatAnyBall();
+                    subExtraRuns = event.getRunsOfByeAnyBall();
+                    if(event.getIsWicket()){
+                        isWicket = true;
+                        dismissedPlayerId = event.getDismissedPlayerId();
+                    }
+                }else if(event.getIsNoBallAnyBall()){
+                    isLegalDelivery = false;
+                    extraType = ExtraType.NO_BALL;
+                    extraRuns = 1;
+                    if(event.getIsByeAnyBall()){
+                        subExtraType = ExtraType.BYE;
+                    }else if(event.getIsLegByeAnyBall()){
+                        subExtraType = ExtraType.LEG_BYE;
+                    }
+                    runsOfBat =event.getRunsOffBatAnyBall() == null ? 0 : event.getRunsOffBatAnyBall();
+                    subExtraRuns = event.getRunsOfByeAnyBall();
+                    if(event.getIsWicket()){
+                        isWicket = true;
+                        dismissedPlayerId = event.getDismissedPlayerId();
+                    }
+                }else if(event.getIsByeAnyBall()){
+                    extraType = ExtraType.BYE;
+                    extraRuns = 0;
+                    subExtraType = ExtraType.BYE;
+                    subExtraRuns = event.getRunsOfByeAnyBall();
+                    if(event.getIsWicket()){
+                        isWicket = true;
+                        dismissedPlayerId = event.getDismissedPlayerId();
+                    }
+                }else if(event.getIsLegByeAnyBall()){
+                    extraType = ExtraType.LEG_BYE;
+                    extraRuns = 0;
+                    subExtraType = ExtraType.LEG_BYE;
+                    subExtraRuns = event.getRunsOfByeAnyBall();
+                    if(event.getIsWicket()){
+                        isWicket = true;
+                        dismissedPlayerId = event.getDismissedPlayerId();
+                    }
+                }
             }
             case END_OVER -> {
-                matchState.setCurrentBowlerId(null);
+                inning.setCurrentBowlerId(null);
                 BowlerCard boc = matchState.getScoreCard().getInnings().get(matchState.getCurrentInningNumber()-1).getBowlingCard().getBowlers().stream()
-                        .filter(bc -> bc.getIsCurrentBowler() && !Objects.equals(bc.getBowler().getPlayerId(), matchState.getCurrentBowlerId()))
+                        .filter(bc -> bc.getIsCurrentBowler() && !Objects.equals(bc.getBowler().getPlayerId(), inning.getCurrentBowlerId()))
                         .findAny().orElseThrow(()-> new ResourceNotFoundException("No duplicate bowlers found"));
 
                 boc.setIsCurrentBowler(false);
@@ -148,14 +216,14 @@ public class JsonFileServiceImpl implements JsonFileService {
                 .oversCompleted(inning.getScoreSummary().getOvers())
                 .ballInOver(inning.getScoreSummary().getBalls())
                 .totalLegalBallsBowled(totalLegalDeliveries)
-                .strikerId(matchState.getStrikerId())
-                .nonStrikerId(matchState.getNonStrikerId())
-                .bowlerId(matchState.getCurrentBowlerId())
+                .strikerId(inning.getStrikerId())
+                .nonStrikerId(inning.getNonStrikerId())
+                .bowlerId(inning.getCurrentBowlerId())
                 .runOffBat(runsOfBat)
-                .extrasRuns(event.getExtrasRuns())
-                .subExtrasRuns(event.getSubExtrasRuns())
-                .extraType(event.getExtraType())
-                .subExtraType(event.getSubExtraType())
+                .extrasRuns(extraRuns)
+                .subExtrasRuns(subExtraRuns)
+                .extraType(extraType)
+                .subExtraType(subExtraType)
                 .isLegalDelivery(isLegalDelivery)
                 .isFreeHit(isFreeHit)
                 .isWicket(isWicket)
@@ -286,5 +354,11 @@ public class JsonFileServiceImpl implements JsonFileService {
     }
     public EventFile getEventsFromMemory(Long matchId){
         return matchAllDataMap.get(matchId).getEventFile();
+    }
+    public MatchAllData updateMap(Long matchId, MatchAllData matchAllData){
+        return matchAllDataMap.put(matchId, matchAllData);
+    }
+    public MatchAllData getMatchAllDataFromMemory(Long matchId){
+        return matchAllDataMap.get(matchId);
     }
 }

@@ -13,8 +13,13 @@ import java.util.List;
 @Builder
 public class Inning {
     private Integer inningNumber;
-    private Long battingTeamId;
+    private Long strikerId;
+    private Long nonStrikerId;
+    private Integer nextBattingPosition;
+    private Long teamId;
+    private Long currentBowlerId;
     private ScoreSummary scoreSummary;
+    private InningControlMetrices controlMetrics;
     private Extras extras;
     private BattingCard battingCard;
     private BowlingCard bowlingCard;

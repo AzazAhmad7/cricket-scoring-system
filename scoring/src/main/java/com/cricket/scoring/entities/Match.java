@@ -72,6 +72,7 @@ public class Match {
     private Integer reviewsPerTeam;
     private Boolean superOverEnabled;
     private Boolean dlsEnabled;
+    private Boolean impactPlayerEnabled;
 
     // Powerplay config
     private Integer powerplayStartOver;

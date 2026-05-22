@@ -27,4 +27,6 @@ public interface JsonFileService {
     MatchState getMatchStateFromMemory(Long matchId);
     SetupFile getSetupFileFromMemory(Long matchId);
     EventFile getEventsFromMemory(Long matchId);
+    MatchAllData updateMap(Long matchId, MatchAllData matchAllData);
+    MatchAllData getMatchAllDataFromMemory(Long matchId);
 }

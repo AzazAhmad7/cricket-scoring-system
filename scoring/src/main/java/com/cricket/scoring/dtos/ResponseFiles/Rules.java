@@ -18,4 +18,5 @@ public class Rules {
     private Integer reviewPerTeam;
     private Boolean superOverEnabled;
     private Boolean dlsEnabled;
+    private Boolean impactPlayerEnabled;
 }

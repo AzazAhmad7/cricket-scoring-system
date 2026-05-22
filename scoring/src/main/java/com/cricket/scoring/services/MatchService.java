@@ -2,10 +2,8 @@ package com.cricket.scoring.services;
 
 import com.cricket.scoring.dtos.MatchStateDTO;
 import com.cricket.scoring.dtos.*;
-import com.cricket.scoring.dtos.ResponseFiles.MatchAllData;
-import com.cricket.scoring.dtos.ResponseFiles.MatchState;
-import com.cricket.scoring.dtos.ResponseFiles.ScoreCard;
-import com.cricket.scoring.dtos.ResponseFiles.SetupFile;
+import com.cricket.scoring.dtos.ResponseFiles.*;
+import com.cricket.scoring.entities.enums.MatchStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,13 +13,19 @@ public interface MatchService {
 
     MatchAllData createMatch(CreateMatchRequest request);
 
+    MatchAllData updateMatchStatus(Long matchId, MatchStatus matchStatus);
+
+    MatchAllData changeInning(Long matchId);
+
     MatchAllData getMatchAllData(Long matchId);
 
-    MatchState startMatch(SetupFile setupFile);
+    MatchState startMatch(SetupFile setupFile, MatchState matchState, Integer inningNumber, MatchStatus matchStatus);
+
+    MatchAllData endMatch(MatchAllData matchAllData);
 
     MatchDTO getMatch(Long matchId);
 
-    List<Long> getAllMatches();
+    List<MatchDTO> getAllMatches();
 
     SetupFile updateMatch(Long matchId, CreateMatchRequest request);
 

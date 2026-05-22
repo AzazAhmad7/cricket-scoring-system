@@ -37,20 +37,25 @@ public class ScoreCardServiceImpl implements ScoreCardService {
     public BatterCard updateBattingCard(MatchState matchState, Inning inning, Event event) {
         List<BatterCard> batterCards = matchState.getScoreCard().getInnings().get(matchState.getCurrentInningNumber()-1).getBattingCard().getBatters();
         BatterCard batterCard = batterCards.stream()
-                .filter(bc -> bc.getBatter().getPlayerId().equals(matchState.getStrikerId()))
+                .filter(bc -> bc.getBatter().getPlayerId().equals(inning.getStrikerId()))
                 .findAny()
-                .orElseThrow(()->new ResourceNotFoundException("Player not found in batterCard with id "+matchState.getStrikerId()));
+                .orElseThrow(()->new ResourceNotFoundException("Player not found in batterCard with id "+inning.getStrikerId()));
+
 
         //UPDATING SCORING STATS
         updateScoringStatsOfBatter(batterCard, event);
 
         //UPDATE DISMISSAL OF BATTER
         if(event.getIsWicket() != null && event.getIsWicket()){
+            BatterCard dismissedBatterCard = batterCards.stream()
+                    .filter(bc -> bc.getBatter().getPlayerId().equals(event.getDismissedPlayerId()))
+                    .findAny()
+                    .orElseThrow(()->new ResourceNotFoundException("Player not found in batterCard with id "+inning.getStrikerId()));
             BowlerCard bowlerCard = inning.getBowlingCard().getBowlers().stream()
-                    .filter(bowler -> bowler.getBowler().getPlayerId() == matchState.getCurrentBowlerId())
+                    .filter(bowler -> bowler.getBowler().getPlayerId() == inning.getCurrentBowlerId())
                     .findAny()
                     .orElseThrow(()->new ResourceNotFoundException("Bowler not found"));
-            updateDismissalOfBatter(matchState, bowlerCard, batterCard, event);
+            updateDismissalOfBatter(matchState, bowlerCard, dismissedBatterCard, event);
         }
 
         //UPDATING PHASE BREAKDOWN OF PLAYER
@@ -65,13 +70,13 @@ public class ScoreCardServiceImpl implements ScoreCardService {
     public BowlingCard updateBowlingCard(MatchState matchState, Inning inning, Event event) {
         List<BowlerCard> bowlerCards = inning.getBowlingCard().getBowlers();
         BowlerCard bowlerCard = bowlerCards.stream()
-                .filter(bowler -> bowler.getBowler().getPlayerId().equals(matchState.getCurrentBowlerId()))
+                .filter(bowler -> bowler.getBowler().getPlayerId().equals(inning.getCurrentBowlerId()))
                 .findAny()
-                .orElseThrow(() -> new ResourceNotFoundException("Bowler not found with id "+matchState.getCurrentBowlerId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Bowler not found with id "+inning.getCurrentBowlerId()));
 
 
         int ballsBowled = bowlerCard.getTotalLegalDeliveriesBowled() == null ? 0 : bowlerCard.getTotalLegalDeliveriesBowled();
-        boolean isLegalDelivery = event.getEventType() != EventType.WIDE && event.getEventType() != EventType.NO_BALL;
+        boolean isLegalDelivery = event.getExtraType() != ExtraType.WIDE && event.getExtraType() != ExtraType.NO_BALL && event.getExtraType() != ExtraType.PENALTY;
         if(isLegalDelivery){
             ballsBowled+=1;
             bowlerCard.setTotalLegalDeliveriesBowled(ballsBowled);
@@ -149,7 +154,7 @@ public class ScoreCardServiceImpl implements ScoreCardService {
             ballEvent.setRunsOffBat(runsOfBat);
             ballEvent.setBowlerRuns(runs);
         }
-        else if(event.getExtraType() != null && event.getExtraType().equals(ExtraType.BYE)){
+        else if(event.getEventType() != null && event.getEventType().equals(EventType.BYE)){
             ballResult= event.getSubExtrasRuns()+"B";
             boolean isWicket = false;
             if(event.getIsWicket() != null && event.getIsWicket()){
@@ -161,7 +166,7 @@ public class ScoreCardServiceImpl implements ScoreCardService {
             ballEvent.setRunsOffBat(0);
             ballEvent.setBowlerRuns(0);
         }
-        else if(event.getExtraType() != null && event.getExtraType().equals(ExtraType.LEG_BYE)){
+        else if(event.getEventType() != null && event.getEventType().equals(EventType.LEG_BYE)){
             ballResult=event.getSubExtrasRuns()+"Lb";
             boolean isWicket = false;
             if(event.getIsWicket() != null && event.getIsWicket()){
@@ -172,6 +177,50 @@ public class ScoreCardServiceImpl implements ScoreCardService {
             ballEvent.setWicket(isWicket);
             ballEvent.setRunsOffBat(0);
             ballEvent.setBowlerRuns(0);
+        }else if(event.getEventType() != null && (event.getEventType() == EventType.ANY_BALL)){
+            ballResult="";
+            int runs = event.getExtrasRuns();
+            int runsOfBat = 0;
+            if(event.getExtraType() != null && event.getExtraType() == ExtraType.WIDE){
+                ballResult="Wd";
+            }else if(event.getExtraType() != null && event.getExtraType() == ExtraType.NO_BALL){
+                ballResult="Nb";
+                runs+=event.getRunOffBat();
+                runsOfBat+=event.getRunOffBat();
+            }else if(event.getExtraType() != null && event.getExtraType() == ExtraType.BYE){
+                ballResult="B";
+            }else if(event.getExtraType() != null && event.getExtraType() == ExtraType.LEG_BYE){
+                ballResult="Lb";
+            }
+
+
+            boolean isWicket = false;
+            if((event.getExtraType() != null && event.getExtraType() == ExtraType.BYE) || (event.getExtraType() != null && event.getExtraType() == ExtraType.LEG_BYE)){
+                if(event.getSubExtrasRuns() != null && event.getSubExtrasRuns() > 0){
+                    ballResult=event.getSubExtrasRuns()+runs+ballResult;
+                }
+            }else{
+                if(event.getExtraType() != null && event.getExtraType() == ExtraType.NO_BALL){
+                    if(runsOfBat > 0){
+                        ballResult=runs+ballResult;
+                    }
+                    if(event.getSubExtrasRuns() != null && event.getSubExtrasRuns() > 0){
+                        ballResult+="+"+event.getSubExtrasRuns();
+                    }
+                }else{
+                    if(event.getSubExtrasRuns() != null && event.getSubExtrasRuns() > 0){
+                        ballResult+="+"+event.getSubExtrasRuns();
+                    }
+                }
+            }
+            if(event.getIsWicket() != null && event.getIsWicket()){
+                ballResult+="+"+"W";
+                isWicket = true;
+            }
+            ballEvent.setWicket(isWicket);
+            ballEvent.setDisplay(ballResult);
+            ballEvent.setRunsOffBat(runsOfBat);
+            ballEvent.setBowlerRuns(runs);
         }
         else{
             ballResult=String.valueOf(event.getRunOffBat());
@@ -193,7 +242,7 @@ public class ScoreCardServiceImpl implements ScoreCardService {
         overRuns += ballRuns;
 
         int maidens = bowlerCard.getMaidens() == null ? 0 : bowlerCard.getMaidens();
-        if(ballsBowled % 6 == 0){
+        if(ballsBowled > 0 && ballsBowled % 6 == 0){
             if(overRuns == 0){
                 maidens++;
             }
@@ -314,7 +363,7 @@ public class ScoreCardServiceImpl implements ScoreCardService {
         if(event.getRunOffBat() != null && event.getRunOffBat() > 0){
             updateBatterRuns(batterCard, event.getRunOffBat());
         }
-        if (event.getEventType() != EventType.WIDE && !(event.getEventType() == EventType.NO_BALL && event.getRunOffBat() == null)) {
+        if (event.getExtraType() != ExtraType.WIDE && !(event.getExtraType() == ExtraType.NO_BALL && event.getRunOffBat() == null)) {
             updateBatterBalls(batterCard);
         }
         switch (event.getEventType()) {
@@ -332,10 +381,10 @@ public class ScoreCardServiceImpl implements ScoreCardService {
         if(batterCard.getDismissal().getStatus() != BattingStatus.NOT_OUT){
             throw new RuntimeConflictException("This batter is not batting");
         }
-
+        Inning inning = Util.getCurrentInning(matchState);
         batterCard.getDismissal().setStatus(BattingStatus.OUT);
         batterCard.getDismissal().setDismissalType(event.getDismissedType());
-        batterCard.getDismissal().setBowlerId(matchState.getCurrentBowlerId());
+        batterCard.getDismissal().setBowlerId(inning.getCurrentBowlerId());
         batterCard.getDismissal().setFielderId(event.getFielderId());
         String dismissalText ="";
         if(event.getDismissedType() == BOWLED){
@@ -357,7 +406,7 @@ public class ScoreCardServiceImpl implements ScoreCardService {
             dismissalText+=event.getDismissedType();
         }
         batterCard.getDismissal().setDismissalText(dismissalText);
-        Inning inning = matchState.getScoreCard().getInnings().get(matchState.getCurrentInningNumber()-1);
+        batterCard.setOnStrike(false);
         String exitScore = inning.getScoreSummary().getRuns() +"-"+inning.getScoreSummary().getWickets();
         updateContextMetricsOfBatter(batterCard,event,batterCard.getContext().getEntryScore(), exitScore);
         return batterCard.getDismissal();
@@ -368,12 +417,12 @@ public class ScoreCardServiceImpl implements ScoreCardService {
 
 
         // CASE 1: second opener selected -> create first partnership
-        if(matchState.getStrikerId() != null && matchState.getNonStrikerId() == null && partnershipCard.getPartnerships().isEmpty()){
+        if(inning.getStrikerId() != null && inning.getNonStrikerId() == null && partnershipCard.getPartnerships().isEmpty()){
             List<PartnershipContribution> contributions = new ArrayList<>();
-            Player strikerPlayer = playerService.getPlayerById(matchState.getStrikerId());
+            Player strikerPlayer = playerService.getPlayerById(inning.getStrikerId());
             Player nonStrikerPlayer = playerService.getPlayerById(playerId);
             PartnershipContribution striker = PartnershipContribution.builder()
-                    .playerId(matchState.getStrikerId())
+                    .playerId(inning.getStrikerId())
                     .name(strikerPlayer.getFullName())
                     .runs(0)
                     .balls(0)
@@ -402,7 +451,7 @@ public class ScoreCardServiceImpl implements ScoreCardService {
             partnershipCard.getPartnerships().add(openingPartnership);
         }
         // CASE 2: new batter after wicket -> close old, create new
-        else if(matchState.getStrikerId()==null || matchState.getNonStrikerId()==null){
+        else if(inning.getStrikerId()==null || inning.getNonStrikerId()==null){
 
             Partnership activePartnership = partnershipCard.getPartnerships()
                             .stream()
@@ -413,7 +462,7 @@ public class ScoreCardServiceImpl implements ScoreCardService {
             if(activePartnership != null){
                 activePartnership.setIsActive(false);
 
-                Long survivingBatter = matchState.getStrikerId() != null ? matchState.getStrikerId() : matchState.getNonStrikerId();
+                Long survivingBatter = inning.getStrikerId() != null ? inning.getStrikerId() : inning.getNonStrikerId();
 
                 BatterCard strikePlayer=null;
                 BatterCard nonStrikePlayer=null;
@@ -490,7 +539,7 @@ public class ScoreCardServiceImpl implements ScoreCardService {
         // striker contribution
         PartnershipContribution striker = p.getContributions()
                         .stream()
-                        .filter(c -> c.getPlayerId().equals(matchState.getStrikerId()))
+                        .filter(c -> c.getPlayerId().equals(inning.getStrikerId()))
                         .findFirst()
                         .orElseThrow(()-> new ResourceNotFoundException("Striker contribution not found"));
 
@@ -628,6 +677,89 @@ public class ScoreCardServiceImpl implements ScoreCardService {
                 .build();
         fallOfWickets.add(fallOfWicket);
         return fallOfWickets;
+    }
+
+    @Override
+    public InningControlMetrices updateInningControlMetrics(MatchState matchState, Inning inning, Event event) {
+
+        InningControlMetrices controlMetrics = inning.getControlMetrics();
+
+        // Current values
+        int dots = controlMetrics.getDots() == null ? 0 : controlMetrics.getDots();
+        int singles = controlMetrics.getSingles() == null ? 0 : controlMetrics.getSingles();
+        int doubles = controlMetrics.getDoubles() == null ? 0 : controlMetrics.getDoubles();
+        int threes = controlMetrics.getThrees() == null ? 0 : controlMetrics.getThrees();
+        int fours = controlMetrics.getFours() == null ? 0 : controlMetrics.getFours();
+        int sixes = controlMetrics.getSixes() == null ? 0 : controlMetrics.getSixes();
+        int boundaries = controlMetrics.getBoundaries() == null ? 0 : controlMetrics.getBoundaries();
+
+        // Handle event
+        switch (event.getEventType()) {
+
+            case DOT_BALL -> controlMetrics.setDots(dots + 1);
+
+            case ONE -> controlMetrics.setSingles(singles + 1);
+
+            case TWO -> controlMetrics.setDoubles(doubles + 1);
+
+            case THREE -> controlMetrics.setThrees(threes + 1);
+
+            case FOUR -> {
+                controlMetrics.setFours(fours + 1);
+                controlMetrics.setBoundaries(boundaries + 1);
+            }
+
+            case SIX -> {
+                controlMetrics.setSixes(sixes + 1);
+                controlMetrics.setBoundaries(boundaries + 1);
+            }
+
+            case ANY_BALL -> {
+                Integer runsOffBat = event.getRunOffBat();
+
+                if (runsOffBat != null) {
+                    switch (runsOffBat) {
+                        case 0 -> controlMetrics.setDots(dots + 1);
+
+                        case 1 -> controlMetrics.setSingles(singles + 1);
+
+                        case 2 -> controlMetrics.setDoubles(doubles + 1);
+
+                        case 3 -> controlMetrics.setThrees(threes + 1);
+
+                        case 4 -> {
+                            // Counts as a four even on a no-ball
+                            controlMetrics.setFours(fours + 1);
+                            controlMetrics.setBoundaries(boundaries + 1);
+                        }
+
+                        case 6 -> {
+                            // Counts as a six even on a no-ball
+                            controlMetrics.setSixes(sixes + 1);
+                            controlMetrics.setBoundaries(boundaries + 1);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Recalculate latest values after updates
+        int updatedFours = controlMetrics.getFours() == null ? 0 : controlMetrics.getFours();
+
+        int updatedSixes = controlMetrics.getSixes() == null ? 0 : controlMetrics.getSixes();
+
+        // Total runs scored by boundaries
+        int boundaryRuns = (updatedFours * 4) + (updatedSixes * 6);
+
+        // Total team runs in this innings
+        int totalRuns =inning.getScoreSummary() != null && inning.getScoreSummary().getRuns() != null ? inning.getScoreSummary().getRuns() : 0;
+
+        // Boundary Percentage = (Runs scored in boundaries / Total runs) × 100
+        double boundaryPercentage =totalRuns > 0 ? Math.round(((double) boundaryRuns * 10000) / totalRuns) / 100.0 : 0.0;
+
+        controlMetrics.setBoundaryPercentage(boundaryPercentage);
+
+        return controlMetrics;
     }
 
     private PhaseStats createPhaseBreakDownTeam(MatchState matchState, Inning inning, Event event){

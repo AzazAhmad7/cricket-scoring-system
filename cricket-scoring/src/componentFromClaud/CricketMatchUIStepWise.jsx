@@ -351,6 +351,13 @@ const MatchDetailsStep = ({ form, setForm, venues }) => (
               checked={form.dlsEnabled}
               onChange={(v) => setForm((f) => ({ ...f, dlsEnabled: v }))}
             />
+            <Toggle
+              label="ImpactPlayer Enabled"
+              checked={form.impactPlayerEnabled}
+              onChange={(v) =>
+                setForm((f) => ({ ...f, impactPlayerEnabled: v }))
+              }
+            />
           </div>
         </div>
       </div>
@@ -955,6 +962,10 @@ const ConfirmStep = ({ form, team1, team2, toss, venues, squad1, squad2 }) => {
         )}
         <Row label="Super Over" value={form.superOverEnabled ? "Yes" : "No"} />
         <Row label="DLS Enabled" value={form.dlsEnabled ? "Yes" : "No"} />
+        <Row
+          label="Impact Player Enabled"
+          value={form.impactPlayerEnabled ? "Yes" : "No"}
+        />
       </div>
 
       <SquadSummary
@@ -1017,6 +1028,7 @@ export default function CricketMatchUIStepWise() {
     reviewsPerTeam: 2,
     superOverEnabled: true,
     dlsEnabled: false,
+    impactPlayerEnabled: false,
   });
 
   const [toss, setToss] = useState({
@@ -1074,6 +1086,7 @@ export default function CricketMatchUIStepWise() {
       reviewsPerTeam: Number(form.reviewsPerTeam),
       superOverEnabled: form.superOverEnabled,
       dlsEnabled: form.dlsEnabled,
+      impactPlayerEnabled: form.impactPlayerEnabled,
 
       // Teams
       homeTeamId: team1.id,
