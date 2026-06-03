@@ -25,7 +25,7 @@ public class CreateMatchRequest {
 
     private String matchName;
 
-    private String competition;
+    private Long competition;
 
     private String season;
 

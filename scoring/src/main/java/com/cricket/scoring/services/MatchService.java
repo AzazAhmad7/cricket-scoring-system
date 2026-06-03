@@ -7,6 +7,7 @@ import com.cricket.scoring.entities.enums.MatchStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 public interface MatchService {
@@ -21,7 +22,7 @@ public interface MatchService {
 
     MatchState startMatch(SetupFile setupFile, MatchState matchState, Integer inningNumber, MatchStatus matchStatus);
 
-    MatchAllData endMatch(MatchAllData matchAllData);
+    SetupFile endMatch(MatchState matchState, SetupFile setupFile);
 
     MatchDTO getMatch(Long matchId);
 
@@ -35,4 +36,8 @@ public interface MatchService {
 
     void assignSquads();
 
+    SetupFile getMatchSetup(Long matchId);
+
+    void resetMatch(Long matchId);
+    MatchState createFreshMatchState(Long matchId);
 }

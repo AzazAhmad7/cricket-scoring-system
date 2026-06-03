@@ -11,6 +11,7 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 public class DismissalInfo {
+    private Boolean isOut;
     private BattingStatus status;
     private DismissalType dismissalType;
     private String dismissalText;

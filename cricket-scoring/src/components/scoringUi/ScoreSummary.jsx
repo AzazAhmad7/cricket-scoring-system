@@ -1,3 +1,5 @@
+import { ImpactIn, ImpactOut } from "./impactIndicator";
+
 function BatsmenTable({ players = [] }) {
   const playing = players.filter((p) => p.dismissal?.status === "NOT_OUT");
 
@@ -22,6 +24,9 @@ function BatsmenTable({ players = [] }) {
             >
               <td className="py-1.5 text-gray-800 font-medium flex items-center gap-1.5">
                 {p.batter?.playerName}
+                {p.isImpactIn && <ImpactIn />}
+
+                {p.isImpactOut && <ImpactOut />}
                 {p.onStrike && (
                   //<span className="text-gray-400 font-normal">*</span>
                   <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block"></span>
@@ -50,7 +55,7 @@ function BatsmenTable({ players = [] }) {
   );
 }
 
-function BowlerTable({ bowler }) {
+function BowlerTable({ bowler, matchData }) {
   return (
     <div className="flex-1 border-l border-gray-100 pl-4">
       <table className="w-full text-xs">
@@ -69,6 +74,12 @@ function BowlerTable({ bowler }) {
             <tr className="border-b border-gray-50">
               <td className="py-1.5 text-gray-800 font-medium">
                 {bowler.bowler?.playerName}
+                {(bowler.bowler.playerId ===
+                  matchData?.squads?.homeTeamImpactPlayerDTO
+                    ?.impactInPlayerId ||
+                  bowler.bowler.playerId ===
+                    matchData?.squads?.awayTeamImpactPlayerDTO
+                      ?.impactInPlayerId) && <ImpactIn />}
               </td>
               <td className="py-1.5 text-center text-gray-500">
                 {bowler.overs ?? 0}
@@ -99,7 +110,8 @@ function BowlerTable({ bowler }) {
   );
 }
 
-export default function ScoreSummary({ matchState, teams }) {
+export default function ScoreSummary({ matchState, matchData }) {
+  const teams = matchData.teams;
   const currentInning = matchState?.scoreCard?.innings?.find(
     (i) => i.inningNumber === matchState?.currentInningNumber,
   );
@@ -116,6 +128,11 @@ export default function ScoreSummary({ matchState, teams }) {
     matchState.battingTeamId === teams?.homeTeam?.id
       ? teams?.homeTeam?.shortName || "IND"
       : teams?.awayTeam?.shortName || "AUS";
+
+  const bowlingTeam =
+    matchState.battingTeamId === teams?.homeTeam?.id
+      ? teams?.awayTeam?.shortName || "IND"
+      : teams?.homeTeam?.shortName || "AUS";
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
@@ -138,7 +155,8 @@ export default function ScoreSummary({ matchState, teams }) {
 
         <div className="flex items-center gap-4 text-xs text-gray-500">
           <div className="bg-gray-100 rounded px-2 py-1 font-semibold text-gray-700">
-            P1
+            {currentInning.scoreSummary?.overs <
+              matchData?.rules?.powerPlayEndOver && "P"}
           </div>
           <div>
             CRR{" "}
@@ -147,7 +165,7 @@ export default function ScoreSummary({ matchState, teams }) {
             </span>
           </div>
           <span className="text-gray-400 text-lg font-light">vs</span>
-          <span className="text-xl">🇦🇺</span>
+          <span className="text-xl">{bowlingTeam}</span>
         </div>
       </div>
 
@@ -172,7 +190,7 @@ export default function ScoreSummary({ matchState, teams }) {
       {/* Batsmen + Bowler Tables */}
       <div className="flex px-4 py-2 gap-2">
         <BatsmenTable players={currentInning?.battingCard?.batters || []} />
-        <BowlerTable bowler={bowler} />
+        <BowlerTable bowler={bowler} matchData={matchData} />
       </div>
 
       {/* This Spell */}
@@ -197,7 +215,7 @@ export default function ScoreSummary({ matchState, teams }) {
             <div
               key={i}
               className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold
-                ${isW ? "bg-red-500 text-white" : is4 || is6 ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-700"}`}
+                ${isW ? "bg-red-500 text-white" : is4 ? "bg-blue-500 text-white" : is6 ? "bg-purple-600 text-white" : "bg-gray-100 text-gray-700"}`}
             >
               {b.display}
             </div>

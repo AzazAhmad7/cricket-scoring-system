@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useParams } from "react-router-dom";
+import { getMatchSetup, updateMatch, getAllTournaments } from "../services/api";
 
 const client = axios.create({
   baseURL: "http://localhost:8080",
@@ -22,6 +24,7 @@ const api = {
 };
 
 const MATCH_FORMATS = ["T20", "ODI", "TEST", "T10", "THE_HUNDRED"];
+const TOURNAMENTS = ["IPL", "BIG BASH LEAGUE", "CHAMPIONS TROPHY"];
 const STEPS = ["Match Details", "Teams & Squads", "Toss", "Confirm & Create"];
 const MAX_XI = 11;
 const MAX_SUB = 5;
@@ -170,7 +173,7 @@ const Toggle = ({ label, checked, onChange }) => (
 );
 
 // ─── Step 1: Match Details ────────────────────────────────────────────────────
-const MatchDetailsStep = ({ form, setForm, venues }) => (
+const MatchDetailsStep = ({ form, setForm, venues, tournaments }) => (
   <div className="max-w-2xl mx-auto">
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
       <h3 className="text-xl font-bold text-slate-800 mb-6">Match Details</h3>
@@ -235,14 +238,20 @@ const MatchDetailsStep = ({ form, setForm, venues }) => (
 
         <div className="grid grid-cols-2 gap-4">
           <Field label="Competition">
-            <input
-              className={inputCls}
+            <select
+              className={selectCls}
               value={form.competition}
               onChange={(e) =>
                 setForm((f) => ({ ...f, competition: e.target.value }))
               }
-              placeholder="e.g. Border-Gavaskar Trophy"
-            />
+            >
+              <option value="">Select Competition</option>
+              {(tournaments ?? []).map((tour) => (
+                <option key={tour.id} value={tour.id}>
+                  {tour.name}
+                </option>
+              ))}
+            </select>
           </Field>
           <Field label="Season">
             <input
@@ -490,13 +499,21 @@ const TeamSquadManager = ({
   setSquad,
 }) => {
   useEffect(() => {
+    // ONLY initialize if squad is empty
+    const hasPlayers =
+      squad?.xi?.some(Boolean) ||
+      squad?.sub?.some(Boolean) ||
+      squad?.bench?.length > 0;
+
+    if (hasPlayers) return;
+
     setSquad(
       teamData?.players
         ? initSquad(teamData.players)
         : {
-            ...EMPTY_SQUAD,
             xi: Array(MAX_XI).fill(null),
             sub: Array(MAX_SUB).fill(null),
+            bench: [],
           },
     );
   }, [teamData]);
@@ -531,7 +548,7 @@ const TeamSquadManager = ({
     });
   };
 
-  const { xi, sub, bench } = squad;
+  const { xi = [], sub = [], bench = [] } = squad || {};
   const xiCount = xi.filter(Boolean).length;
   const subCount = sub.filter(Boolean).length;
   const totalLoaded = xiCount + subCount + bench.length;
@@ -990,9 +1007,11 @@ const ConfirmStep = ({ form, team1, team2, toss, venues, squad1, squad2 }) => {
 };
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export default function CricketMatchUIStepWise() {
+export default function CricketMatchUIStepWise({ mode }) {
+  const { matchId } = useParams();
   const [allTeams, setAllTeams] = useState([]);
   const [allVenues, setAllVenues] = useState([]);
+  const [allTournaments, setAllTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
@@ -1037,6 +1056,115 @@ export default function CricketMatchUIStepWise() {
     decision: "Bat",
   });
 
+  const fetchTournaments = async () => {
+    const res = await getAllTournaments();
+    console.log("tourn ", res);
+    setAllTournaments(res);
+  };
+
+  useEffect(() => {
+    fetchTournaments();
+  },[]);
+
+  useEffect(() => {
+    if (mode !== "edit") return;
+
+    const fetchMatch = async () => {
+      try {
+        const res = await getMatchSetup(matchId);
+
+        const setup = res.data;
+        console.log(setup.data);
+
+        // FORM
+        setForm({
+          matchName: setup.data.matchInfo.matchName || "",
+
+          matchNumber: setup.data.matchInfo.matchNumber || "",
+
+          format: setup.data.matchInfo.format || "",
+
+          competition: setup.data.matchInfo.competition || "",
+
+          season: setup.data.matchInfo.season || "",
+
+          venueId: setup.data.venue.id || "",
+
+          totalOvers: setup.data.rules.overs || 20,
+
+          ballsPerOver: setup.data.rules.ballsPerOver || 6,
+
+          powerplayStartOver: setup.data.rules.powerplayStartOver || 1,
+
+          powerplayEndOver: setup.data.rules.powerplayEndOver || 6,
+
+          drsEnabled: setup.data.rules.drsEnabled ?? false,
+
+          reviewsPerTeam: setup.data.rules.reviewsPerTeam || 0,
+
+          superOverEnabled: setup.data.rules.superOverEnabled ?? false,
+
+          dlsEnabled: setup.data.rules.dlsEnabled ?? false,
+
+          impactPlayerEnabled: setup.data.rules.impactPlayerEnabled ?? false,
+        });
+
+        // TEAMS
+        setTeam1(setup.data.teams.homeTeam || {});
+
+        setTeam2(setup.data.teams.awayTeam || {});
+
+        // SQUADS
+        setSquad1({
+          xi: Array(MAX_XI)
+            .fill(null)
+            .map(
+              (_, i) =>
+                setup?.data?.squads?.homeTeamPlaying11?.players?.[i] || null,
+            ),
+
+          sub: Array(MAX_SUB)
+            .fill(null)
+            .map(
+              (_, i) =>
+                setup?.data?.squads?.homeTeamSubstitutes?.players?.[i] || null,
+            ),
+
+          bench: setup?.data?.squads?.homeTeamBenchPlayers?.players || [],
+        });
+
+        setSquad2({
+          xi: Array(MAX_XI)
+            .fill(null)
+            .map(
+              (_, i) =>
+                setup?.data?.squads?.awayTeamPlaying11?.players?.[i] || null,
+            ),
+
+          sub: Array(MAX_SUB)
+            .fill(null)
+            .map(
+              (_, i) =>
+                setup?.data?.squads?.awayTeamSubstitutes?.players?.[i] || null,
+            ),
+
+          bench: setup?.data?.squads?.awayTeamBenchPlayers?.players || [],
+        });
+
+        // TOSS
+        setToss({
+          winnerId: setup?.data?.toss?.winnerId || null,
+          decision: setup.data.toss.tossDecision || "",
+          method: setup.data.toss.tossMethod || "",
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchMatch();
+  }, [mode, matchId]);
+
   useEffect(() => {
     Promise.all([api.getAllTeams(), api.getAllVenues()])
       .then(([teams, venues]) => {
@@ -1054,7 +1182,19 @@ export default function CricketMatchUIStepWise() {
     }
     try {
       const data = await api.getTeamById(teamId);
-      slot === "A" ? setTeam1(data) : setTeam2(data);
+      if (slot === "A") {
+        setTeam1(data);
+
+        if (mode !== "edit") {
+          setSquad1(initSquad(data.players || []));
+        }
+      } else {
+        setTeam2(data);
+
+        if (mode !== "edit") {
+          setSquad2(initSquad(data.players || []));
+        }
+      }
     } catch (err) {
       console.error("Team load error:", err);
       alert("Failed to load team: " + err.message);
@@ -1075,7 +1215,7 @@ export default function CricketMatchUIStepWise() {
       matchName: form.matchName,
       matchNumber: Number(form.matchNumber),
       format: form.format,
-      competition: form.competition,
+      competition: Number(form.competition),
       season: form.season,
       venueId: Number(form.venueId),
       totalOvers: Number(form.totalOvers),
@@ -1110,8 +1250,16 @@ export default function CricketMatchUIStepWise() {
 
     setSubmitting(true);
     try {
-      await api.createMatch(payload);
-      alert("Match created successfully!");
+      if (mode === "edit") {
+        console.log("payload ", payload);
+        await updateMatch(matchId, payload);
+
+        alert("Match updated successfully!");
+      } else {
+        await api.createMatch(payload);
+
+        alert("Match created successfully!");
+      }
     } catch (err) {
       console.error("Create match error:", err);
       alert("Failed to create match: " + err.message);
@@ -1147,7 +1295,9 @@ export default function CricketMatchUIStepWise() {
       <div className="flex-1 flex flex-col overflow-auto">
         <header className="bg-slate-950 text-white px-8 py-4 flex justify-between items-center shadow-lg flex-shrink-0">
           <div className="flex items-center gap-3">
-            <span className="text-slate-400 text-sm">Create Match</span>
+            <span className="text-slate-400 text-sm">
+              {mode === "edit" ? "Update Match" : "Create Match"}
+            </span>
             <span className="text-slate-600">›</span>
             <span className="text-white text-sm font-medium">
               {STEPS[currentStep]}
@@ -1194,7 +1344,13 @@ export default function CricketMatchUIStepWise() {
                   disabled={submitting}
                   className="px-5 py-2.5 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition"
                 >
-                  {submitting ? "Creating…" : "✓ Confirm & Create"}
+                  {submitting
+                    ? mode === "edit"
+                      ? "Updating..."
+                      : "Creating..."
+                    : mode === "edit"
+                      ? "✓ Update Match"
+                      : "✓ Confirm & Create"}
                 </button>
               )}
             </div>
@@ -1206,6 +1362,7 @@ export default function CricketMatchUIStepWise() {
               form={form}
               setForm={setForm}
               venues={allVenues}
+              tournaments={allTournaments}
             />
           )}
           {currentStep === 1 && (

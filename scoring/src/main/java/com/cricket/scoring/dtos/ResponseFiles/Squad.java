@@ -1,7 +1,10 @@
 package com.cricket.scoring.dtos.ResponseFiles;
 
 import com.cricket.scoring.dtos.ImpactPlayerDTO;
+import com.cricket.scoring.dtos.PlayerDTO;
 import lombok.*;
+
+import java.util.List;
 
 @Data
 @Getter
@@ -10,6 +13,8 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 public class Squad {
+    private ActivePlayers homeTeamActivePlayers;
+    private ActivePlayers awayTeamActivePlayers;
     private Playing11 homeTeamPlaying11;
     private Substitutes homeTeamSubstitutes;
     private BenchPlayers homeTeamBenchPlayers;

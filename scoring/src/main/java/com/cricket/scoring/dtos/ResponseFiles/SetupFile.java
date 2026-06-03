@@ -15,4 +15,5 @@ public class SetupFile {
     private Toss toss;
     private Rules rules;
     private Venue venue;
+    private PlayerStats playerStats;
 }

@@ -4,6 +4,8 @@
 // const batting = ...
 // const bowling = ...
 
+import { ImpactIn, ImpactOut } from "./impactIndicator";
+
 export default function ScoreCard({ matchData, matchState }) {
   const home = matchData?.teams?.homeTeam;
   const away = matchData?.teams?.awayTeam;
@@ -104,6 +106,8 @@ export default function ScoreCard({ matchData, matchState }) {
                     const balls = batter?.scoring?.balls || 0;
 
                     const isStriker = playerId === inning?.strikerId;
+                    const isImpactIn = batter.isImpactIn;
+                    const isImpactOut = batter.isImpactOut;
                     const isNonStriker = playerId === inning?.nonStrikerId;
                     const isCurrent = isStriker || isNonStriker;
                     const hasBatted = balls > 0 || isCurrent;
@@ -130,9 +134,12 @@ export default function ScoreCard({ matchData, matchState }) {
                               }
                             >
                               {batter?.batter?.playerName}
-                              {isStriker && " *"}
+
+                              {/* {isStriker && " *"} */}
                             </span>
-                            {isCurrent && (
+                            {isImpactIn && <ImpactIn />}
+                            {isImpactOut && <ImpactOut />}
+                            {isStriker && (
                               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                             )}
                           </div>
@@ -213,8 +220,20 @@ export default function ScoreCard({ matchData, matchState }) {
                               }
                             >
                               {bowler?.bowler?.playerName}
-                              {isCurrent && " *"}
+                              {/* {isCurrent && " *"} */}
                             </span>
+                            {(bowler.bowler.playerId ===
+                              matchData?.squads?.homeTeamImpactPlayerDTO
+                                ?.impactInPlayerId ||
+                              bowler.bowler.playerId ===
+                                matchData?.squads?.awayTeamImpactPlayerDTO
+                                  ?.impactInPlayerId) && <ImpactIn />}
+                            {(bowler.bowler.playerId ===
+                              matchData?.squads?.homeTeamImpactPlayerDTO
+                                ?.impactOutPlayerId ||
+                              bowler.bowler.playerId ===
+                                matchData?.squads?.awayTeamImpactPlayerDTO
+                                  ?.impactOutPlayerId) && <ImpactOut />}
                             {isCurrent && (
                               <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
                             )}
@@ -252,22 +271,35 @@ export default function ScoreCard({ matchData, matchState }) {
           </h3>
 
           {fallOfWickets.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
               {fallOfWickets.map((fow, index) => (
                 <div
                   key={index}
-                  className="bg-slate-700/40 rounded-xl p-5 border border-slate-600 text-center hover:bg-slate-700/60 transition"
+                  className="bg-slate-700/40 rounded-lg p-3 border border-slate-600 text-center hover:bg-slate-700/60 transition"
                 >
                   {/* Score at Fall */}
-                  <div className="text-2xl font-bold text-emerald-400">
+                  <div className="text-lg font-bold text-emerald-400">
                     {index + 1}-{fow.scoreAtFall}
                   </div>
 
                   {/* Batter Name */}
-                  <div className="mt-2 text-sm font-semibold text-white">
+                  <div className="mt-2 text-xs font-semibold text-white">
                     {fow.batterName}
+                    <span className="p-2">
+                      {(fow.batterId ===
+                        matchData?.squads?.homeTeamImpactPlayerDTO
+                          ?.impactInPlayerId ||
+                        fow.batterId ===
+                          matchData?.squads?.awayTeamImpactPlayerDTO
+                            ?.impactInPlayerId) && <ImpactIn />}
+                      {(fow.batterId ===
+                        matchData?.squads?.homeTeamImpactPlayerDTO
+                          ?.impactOutPlayerId ||
+                        fow.batterId ===
+                          matchData?.squads?.awayTeamImpactPlayerDTO
+                            ?.impactOutPlayerId) && <ImpactOut />}
+                    </span>
                   </div>
-
                   {/* Over */}
                   <div className="mt-1 text-xs text-slate-400">
                     {fow.over} overs

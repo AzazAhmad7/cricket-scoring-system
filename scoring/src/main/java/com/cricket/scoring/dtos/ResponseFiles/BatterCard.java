@@ -23,4 +23,6 @@ public class BatterCard {
     private ContextMetrics context;
 
     private Boolean onStrike;
+    private Boolean isImpactIn;
+    private Boolean isImpactOut;
 }

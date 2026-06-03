@@ -1,7 +1,11 @@
 package com.cricket.scoring.dtos.ResponseFiles;
 
+import com.cricket.scoring.dtos.BatterStatsDTO;
+import com.cricket.scoring.entities.BatterStats;
 import com.cricket.scoring.entities.enums.MatchStatus;
 import lombok.*;
+
+import java.util.List;
 
 @Data
 @Getter

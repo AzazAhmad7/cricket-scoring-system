@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getMatchAllData } from "../services/api";
+import { getMatchAllData, handleApiError } from "../services/api";
 import Sidebar from "../components/scoringUi/Sidebar";
 import Header from "../components/scoringUi/Header";
 import ScoreCard from "../components/scoringUi/ScoreCard";
@@ -19,9 +19,13 @@ export default function PlayerPage() {
   }, []);
 
   const fetchMatch = async () => {
-    const res = await getMatchAllData(matchId);
-    setMatchData(res.data.setupFile);
-    setMatchState(res.data.matchState);
+    try {
+      const res = await getMatchAllData(matchId);
+      setMatchData(res.data.setupFile);
+      setMatchState(res.data.matchState);
+    } catch (error) {
+      handleApiError(error)
+    }
   };
 
   if (!matchData || !matchState) return null;

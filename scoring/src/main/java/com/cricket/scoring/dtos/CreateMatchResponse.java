@@ -25,7 +25,7 @@ public class CreateMatchResponse {
     private MatchStatus status;
     // SCHEDULED, LIVE, INNINGS_BREAK, COMPLETED
 
-    private String competition; // IPL
+    private Long competition; // IPL
     private String season; // 2026
     private Integer matchNumber;
 

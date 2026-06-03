@@ -13,11 +13,10 @@ import java.util.List;
 
 @Getter
 @Setter
-@Builder
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@Builder
 @Table(name="matches")
 public class Match {
 
@@ -29,6 +28,10 @@ public class Match {
 
     private String matchName; // India vs Australia
 
+    @ManyToOne
+    @JoinColumn(name = "tournament_id")
+    private Tournament tournament;
+
     @Enumerated(EnumType.STRING)
     private MatchFormat format; // T20 ODI TEST
 
@@ -36,7 +39,7 @@ public class Match {
     private MatchStatus status;
     // SCHEDULED, LIVE, INNINGS_BREAK, COMPLETED
 
-    private String competition; // IPL
+    private Long competition; // IPL
     private String season; // 2026
     private Integer matchNumber;
 

@@ -35,8 +35,18 @@ public class ScoringController {
         return ResponseEntity.ok(scoringService.selectNewBowler(playerId, event));
     }
 
+    @PostMapping("/{matchId}/rebuild")
+    public ResponseEntity<MatchState> rebuildMatch(@PathVariable Long matchId){
+        return ResponseEntity.ok(scoringService.rebuildMatchState(matchId));
+    }
+
     @PostMapping("/endOver")
     public void endOver(@RequestBody Event event){
         scoringService.endOver(event);
+    }
+
+    @PostMapping("/swapStriker")
+    public ResponseEntity<Boolean> swapStriker(@RequestBody MatchState matchState){
+        return ResponseEntity.ok(scoringService.swapStrikerDirectly(matchState));
     }
 }

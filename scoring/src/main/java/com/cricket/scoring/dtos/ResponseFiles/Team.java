@@ -14,5 +14,6 @@ import java.util.List;
 public class Team {
     private Long id;
     private String name;
+    private String shortName;
     private List<Player> players;
 }

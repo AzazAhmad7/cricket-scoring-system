@@ -87,7 +87,6 @@ export default function Header({ data }) {
 
     try {
       setUpdating(true);
-      console.log("new status",newStatus)
       await updateMatchStatus(matchId, newStatus);
 
       console.log("Match status updated successfully");

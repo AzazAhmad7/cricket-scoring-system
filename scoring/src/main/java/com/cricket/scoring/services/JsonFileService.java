@@ -1,6 +1,11 @@
 package com.cricket.scoring.services;
 
+import com.cricket.scoring.dtos.PointsTableDTO;
 import com.cricket.scoring.dtos.ResponseFiles.*;
+import com.cricket.scoring.entities.Tournament;
+
+import java.util.List;
+import java.util.Set;
 
 public interface JsonFileService {
 
@@ -10,7 +15,7 @@ public interface JsonFileService {
 
     void createEventFile(MatchState matchState, EventFile eventFile);
 
-    void appendEvent(MatchState matchState, Inning inning, Event event, EventFile eventFile);
+    List<Event> appendEvent(MatchState matchState, Inning inning, Event event, EventFile eventFile);
 
     SetupFile loadSetupFile(Long matchId);
 
@@ -20,13 +25,14 @@ public interface JsonFileService {
 
     void updateStateFile(MatchState matchState);
     void updateSetUpFile(SetupFile setupFile);
+    void clearEventFile(Long matchId);
 
     void rebuildStateFromEvents();
 
     MatchAllData loadMatchAllData(Long matchId);
-    MatchState getMatchStateFromMemory(Long matchId);
-    SetupFile getSetupFileFromMemory(Long matchId);
-    EventFile getEventsFromMemory(Long matchId);
-    MatchAllData updateMap(Long matchId, MatchAllData matchAllData);
-    MatchAllData getMatchAllDataFromMemory(Long matchId);
+    MatchAllData loadMatch(Long matchId);
+    MatchAllData initializeMatch(MatchState matchState, SetupFile setupFile, EventFile eventFile, Long matchId);
+    Boolean mapContains(Long matchId);
+    void createPointsTable(Tournament tournament, LeagueTable leagueTable);
+    LeagueTable loadLeagueTable(String tournamentName);
 }

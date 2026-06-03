@@ -18,7 +18,7 @@ public class MatchInfo {
     private String externalMatchId;
     private String matchName;
     private MatchFormat format;
-    private String competition;
+    private Long competition;
     private String season;
     private Integer matchNumber;
     private MatchStatus status;

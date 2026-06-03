@@ -8,6 +8,10 @@ export const getMatchById = async (id) => {
   return res.data;
 };
 
+export const getMatchSetup = async (matchId) => {
+  return await axios.get(`${API}/matches/${matchId}/setup`);
+};
+
 export const getAllMatches = async () => {
   const res = await axios.get(`${API}/matches`);
   return res.data;
@@ -20,11 +24,17 @@ export const createMatch = async (createMatchRequest) => {
 
 export const getMatchAllData = async (id) => {
   const res = await axios.get(`${API}/matches/${id}/matchAllData`);
+  console.log("DATA I GOT", res.data);
   return res.data;
 };
 
 export const changeInning = async (id) => {
   const res = await axios.post(`${API}/matches/${id.matchId}/innings`);
+  return res.data;
+};
+
+export const resetMatch = async (id) => {
+  const res = await axios.put(`${API}/matches/${id.matchId}/reset`);
   return res.data;
 };
 
@@ -35,11 +45,35 @@ export const updateMatchStatus = async (matchId, status) => {
   const res = await axios.put(`${API}/matches/${matchId}/status`, payload);
   return res.data;
 };
+export const updateMatch = async (matchId, request) => {
+  const res = await axios.put(`${API}/matches/${matchId}`, request);
+  return res.data;
+};
 
 //SCORING API
+export const rebuildMatch = async (id) => {
+  const res = await axios.post(`${API}/score/${id.matchId}/rebuild`);
+  return res.data;
+};
+export const swapStriker = async (matchState) => {
+  console.log("STATE ", matchState);
+  const res = await axios.post(
+    `${API}/score/swapStriker`,
+    matchState.matchState,
+  );
+  return res.data;
+};
 export const scoreBall = async (event) => {
-  console.log("scoreEvent " + event);
   const res = await axios.post(`${API}/score/scoreBall`, event);
+  return res.data;
+};
+
+export const impactPlayer = async (event) => {
+  console.log("impact event " + event);
+  const res = await axios.post(
+    `${API}/score/impactPlayer/${event.matchId}`,
+    event,
+  );
   return res.data;
 };
 
@@ -67,8 +101,24 @@ export const endOver = async (event) => {
 // =========================
 // TEAM APIs
 // =========================
+
+export const createTeam = async (request) => {
+  console.log("request ", request);
+  const res = await axios.post(`${API}/teams/create`, request);
+  return res.data.data ?? res.data;
+};
 export const getAllTeams = async () => {
   const res = await axios.get(`${API}/teams`);
+  return res.data.data ?? res.data;
+};
+
+export const deleteTeam = async (teamId) => {
+  const res = await axios.delete(`${API}/teams/${teamId}`);
+  return res.data.data ?? res.data;
+};
+
+export const updateTeam = async (teamId, request) => {
+  const res = await axios.put(`${API}/teams/${teamId}`, request);
   return res.data.data ?? res.data;
 };
 
@@ -83,4 +133,36 @@ export const getTeamById = async (id) => {
 export const getAllVenues = async () => {
   const res = await axios.get(`${API}/venues`);
   return res.data.data ?? res.data;
+};
+
+//TOURNAMENTS
+export const getAllTournaments = async () => {
+  const res = await axios.get(`${API}/tournaments`);
+  return res.data.data ?? res.data;
+};
+
+export const createTournament = async (request) => {
+  const res = await axios.post(`${API}/tournaments/create`, request);
+  return res.data;
+};
+
+//ERROR HANDLING
+
+export const handleApiError = (error) => {
+  console.error("Full Error:", error);
+  console.error("Response:", error.response);
+  console.error("Response Data:", error.response?.data.error);
+
+  if (error.response) {
+    const message =
+      error.response.data?.error?.message ||
+      error.response.data?.error ||
+      `Request failed with status ${error.response.status}`;
+
+    alert(message);
+  } else if (error.request) {
+    alert("Server is unreachable. Please try again.");
+  } else {
+    alert(error.message || "Something went wrong.");
+  }
 };

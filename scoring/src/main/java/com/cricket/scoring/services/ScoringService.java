@@ -7,10 +7,12 @@ import com.cricket.scoring.dtos.ResponseFiles.*;
 import java.util.List;
 
 public interface ScoringService {
-    public void scoreBall(Event event);
-    public BatterCard selectNewBatter(Long playerId, Event event);
-    public BowlingCard selectNewBowler(Long playerId, Event event);
-    public void switchStrike(MatchState matchState, Inning inning);
-    public void endOver(Event event);
-    public void impactPlayer(ImpactPlayerDTO impactPlayerDTO, Long matchId);
+     void scoreBall(Event event);
+     BatterCard selectNewBatter(Long playerId, Event event);
+     BowlingCard selectNewBowler(Long playerId, Event event);
+     boolean switchStrike(MatchState matchState);
+     boolean swapStrikerDirectly(MatchState matchState);
+     void endOver(Event event);
+     void impactPlayer(ImpactPlayerDTO impactPlayerDTO, Long matchId);
+     MatchState rebuildMatchState( Long matchId);
 }

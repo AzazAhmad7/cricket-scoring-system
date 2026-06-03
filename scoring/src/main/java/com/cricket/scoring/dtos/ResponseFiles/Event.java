@@ -44,4 +44,10 @@ public class Event {
     private Boolean isLegByeAnyBall;
     private Integer runsOfByeAnyBall;
     private Integer runsOffBatAnyBall;
+
+    //IMPACT
+    private Boolean isImpact = false;
+    private Long impactInPlayerId;
+    private Long impactOutPlayerId;
+    private Long teamId;
 }

@@ -1,5 +1,6 @@
 package com.cricket.scoring.utils;
 
+import com.cricket.scoring.dtos.ResponseFiles.BattingCard;
 import com.cricket.scoring.dtos.ResponseFiles.Inning;
 import com.cricket.scoring.dtos.ResponseFiles.MatchState;
 import com.cricket.scoring.entities.enums.DismissalType;
@@ -35,6 +36,15 @@ public class Util {
         return Math.round(rrr * 100.0) / 100.0;
     }
 
+    public static double calculateRunRate(int runsScored, int ballsFaced, int runsConceded, int ballsBowled){
+        double runRateFor = (runsScored * 6.0) / ballsFaced;
+        double runRateAgainst = (runsConceded * 6.0) / ballsBowled;
+
+        double nrr = runRateFor - runRateAgainst;
+
+        return Math.round(nrr * 100.0) / 100.0;
+    }
+
     public static double calculateStrikeRate(int runs, int ballsFaced){
         return Math.round(
                 ((runs * 100.0) / ballsFaced) * 100
@@ -58,5 +68,26 @@ public class Util {
                 || dismissalType == STUMPED
                 || dismissalType == HIT_WICKET
                 || dismissalType == CAUGHT_AND_BOWLED;
+    }
+
+    public static void sortBattingCardByPosition(BattingCard battingCard){
+
+        battingCard.getBatters().sort((b1, b2) -> {
+
+            Integer pos1 = b1.getBatter().getBattingPosition();
+            Integer pos2 = b2.getBatter().getBattingPosition();
+
+            // null batting positions go to bottom
+            if(pos1 == null && pos2 == null)
+                return 0;
+
+            if(pos1 == null)
+                return 1;
+
+            if(pos2 == null)
+                return -1;
+
+            return Integer.compare(pos1, pos2);
+        });
     }
 }

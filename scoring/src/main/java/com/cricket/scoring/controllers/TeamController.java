@@ -42,7 +42,7 @@ public class TeamController {
         return ResponseEntity.ok(playerService.getPlayersByTeam(teamId));
     }
 
-    @PatchMapping("/{teamId}")
+    @PutMapping("/{teamId}")
     public ResponseEntity<TeamDTO> updateTeam(@PathVariable Long teamId, @RequestBody TeamDTO teamDTO){
         return ResponseEntity.ok(teamService.updateTeam(teamId, teamDTO));
     }

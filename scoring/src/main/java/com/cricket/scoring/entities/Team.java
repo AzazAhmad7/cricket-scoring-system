@@ -1,20 +1,18 @@
 package com.cricket.scoring.entities;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name="teams")
-@Data
-@Builder
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class Team {
 
     @Id
@@ -23,6 +21,9 @@ public class Team {
 
     @Column(nullable=false, unique=true)
     private String name; // India
+
+    @OneToMany(mappedBy = "team")
+    private List<TournamentTeam> tournaments = new ArrayList<>();
 
     private String shortName; // IND
 

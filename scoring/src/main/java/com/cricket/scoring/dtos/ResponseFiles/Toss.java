@@ -11,6 +11,8 @@ import lombok.*;
 @Builder
 public class Toss {
     private Long winnerId;
+    private Long battingTeamId;
+    private Long bowlingTeamId;
     private String winnerName;
     private TossDecision tossDecision;
 }

@@ -1,4 +1,5 @@
 import React from "react";
+import { ImpactIn, ImpactOut } from "./impactIndicator";
 
 export default function Partnership({ matchData, matchState }) {
   const home = matchData?.teams?.homeTeam;
@@ -95,9 +96,37 @@ export default function Partnership({ matchData, matchState }) {
                       <div className="space-y-1">
                         <div className="font-semibold text-white">
                           {p.contributions[0].name}
+                          <span className="p-2">
+                            {(p.contributions[0].playerId ===
+                              matchData?.squads?.homeTeamImpactPlayerDTO
+                                ?.impactInPlayerId ||
+                              p.contributions[0].playerId ===
+                                matchData?.squads?.awayTeamImpactPlayerDTO
+                                  ?.impactInPlayerId) && <ImpactIn />}
+                            {(p.contributions[0].playerId ===
+                              matchData?.squads?.homeTeamImpactPlayerDTO
+                                ?.impactOutPlayerId ||
+                              p.contributions[0].playerId ===
+                                matchData?.squads?.awayTeamImpactPlayerDTO
+                                  ?.impactOutPlayerId) && <ImpactOut />}
+                          </span>
                         </div>
                         <div className="font-semibold text-white">
                           {p.contributions[1].name}
+                          <span className="p-2">
+                            {(p.contributions[1].playerId ===
+                              matchData?.squads?.homeTeamImpactPlayerDTO
+                                ?.impactInPlayerId ||
+                              p.contributions[1].playerId ===
+                                matchData?.squads?.awayTeamImpactPlayerDTO
+                                  ?.impactInPlayerId) && <ImpactIn />}
+                            {(p.contributions[1].playerId ===
+                              matchData?.squads?.homeTeamImpactPlayerDTO
+                                ?.impactOutPlayerId ||
+                              p.contributions[1].playerId ===
+                                matchData?.squads?.awayTeamImpactPlayerDTO
+                                  ?.impactOutPlayerId) && <ImpactOut />}
+                          </span>
                         </div>
                       </div>
 

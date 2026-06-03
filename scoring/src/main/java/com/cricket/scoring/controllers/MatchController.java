@@ -19,7 +19,6 @@ import java.util.Set;
 @RequestMapping("/matches")
 public class MatchController {
     private final MatchService matchService;
-    private final JsonFileService jsonFileService;
 
     @PostMapping("/create")
     public ResponseEntity<MatchAllData> createMatch(@RequestBody CreateMatchRequest request){
@@ -30,7 +29,17 @@ public class MatchController {
         return new ResponseEntity<>(matchService.changeInning(matchId), HttpStatus.OK);
     }
 
-    @PatchMapping("/{matchId}")
+    @GetMapping("/{matchId}/setup")
+    public ResponseEntity<SetupFile> getMatchSetup( @PathVariable Long matchId){
+        return ResponseEntity.ok(matchService.getMatchSetup(matchId));
+    }
+
+    @PutMapping("/{matchId}/reset")
+    public void resetMatch( @PathVariable Long matchId){
+        matchService.resetMatch(matchId);
+    }
+
+    @PutMapping("/{matchId}")
     public ResponseEntity<SetupFile> updateMatch(@PathVariable Long matchId,@RequestBody CreateMatchRequest request){
         return ResponseEntity.ok(matchService.updateMatch(matchId, request));
     }

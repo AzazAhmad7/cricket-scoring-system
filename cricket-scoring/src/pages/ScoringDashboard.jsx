@@ -17,6 +17,11 @@ import {
   logNewBowler,
   endOver,
   changeInning,
+  resetMatch,
+  rebuildMatch,
+  swapStriker,
+  impactPlayer,
+  handleApiError,
 } from "../services/api";
 import { useParams } from "react-router-dom";
 
@@ -27,11 +32,15 @@ export default function ScoringDashboard() {
   const [matchState, setMatchState] = useState(null);
 
   const fetchMatch = async () => {
-    console.log("match Id ", matchId);
-    const res = await getMatchAllData(matchId);
-    setMatchAllData(res.data);
-    setMatchData(res.data.setupFile);
-    setMatchState(res.data.matchState);
+    try {
+      const res = await getMatchAllData(matchId);
+      console.log("DATA : ", res);
+      setMatchAllData(res.data);
+      setMatchData(res.data.setupFile);
+      setMatchState(res.data.matchState);
+    } catch (error) {
+      handleApiError(error);
+    }
   };
 
   useEffect(() => {
@@ -39,8 +48,6 @@ export default function ScoringDashboard() {
   }, []);
 
   const handleBallEvent = async (thisEventData) => {
-    // If a simple string is passed, e.g. "ONE", "FOUR"
-    console.log(thisEventData);
     const event =
       typeof thisEventData === "string"
         ? {
@@ -56,7 +63,6 @@ export default function ScoringDashboard() {
             isWicket: thisEventData.isWicket,
             dismissedPlayerId: thisEventData.dismissedPlayerId,
 
-            //any ball extra runs
             isWideAnyBall: thisEventData.isWide,
             isNoBallAnyBall: thisEventData.isNoBall,
             isByeAnyBall: thisEventData.isBye,
@@ -65,43 +71,114 @@ export default function ScoringDashboard() {
             runsOffBatAnyBall: thisEventData.runsOfBat,
           };
 
-    console.log("Event to send:", event);
-    await scoreBall(event);
-
-    await fetchMatch();
+    try {
+      console.log("event To be Sent", event);
+      await scoreBall(event);
+      await fetchMatch();
+    } catch (error) {
+      handleApiError(error);
+    }
   };
 
   const handleEndOverEvent = async () => {
-    await endOver({
-      matchId: matchData.matchInfo.matchId,
-      eventType: "END_OVER",
-    });
+    try {
+      await endOver({
+        matchId: matchData.matchInfo.matchId,
+        eventType: "END_OVER",
+      });
 
-    await fetchMatch();
+      await fetchMatch();
+    } catch (error) {
+      handleApiError(error);
+    }
   };
 
   const handleChangeInning = async () => {
-    await changeInning({
-      matchId: matchData.matchInfo.matchId,
-    });
-    await fetchMatch();
+    try {
+      await changeInning({
+        matchId: matchData.matchInfo.matchId,
+      });
+
+      await fetchMatch();
+    } catch (error) {
+      handleApiError(error);
+    }
+  };
+  const handleResetMatch = async () => {
+    try {
+      await resetMatch({
+        matchId: matchData.matchInfo.matchId,
+      });
+
+      await fetchMatch();
+    } catch (error) {
+      handleApiError(error);
+    }
+  };
+  const handleRebuildMatch = async () => {
+    try {
+      await rebuildMatch({
+        matchId: matchData.matchInfo.matchId,
+      });
+
+      await fetchMatch();
+    } catch (error) {
+      handleApiError(error);
+    }
+  };
+  const handleSwapStriker = async () => {
+    try {
+      await swapStriker({
+        matchState: matchState,
+      });
+
+      await fetchMatch();
+    } catch (error) {
+      handleApiError(error);
+    }
+  };
+
+  const handleImpactPlayer = async (impactEvent) => {
+    try {
+      await impactPlayer({
+        matchId: matchData.matchInfo.matchId,
+        eventType: impactEvent.eventType,
+        teamId: impactEvent.teamId,
+        impactInPlayerId: impactEvent.impactInPlayerId,
+        impactOutPlayerId: impactEvent.impactOutPlayerId,
+      });
+
+      await fetchMatch();
+    } catch (error) {
+      handleApiError(error);
+    }
   };
 
   const handleNewBatterEvent = async (thisEventData) => {
-    await logNewBatter({
-      matchId: matchData.matchInfo.matchId,
-      eventType: thisEventData.eventType,
-      playerId: thisEventData.playerId,
-    });
-    await fetchMatch();
+    try {
+      await logNewBatter({
+        matchId: matchData.matchInfo.matchId,
+        eventType: thisEventData.eventType,
+        playerId: thisEventData.playerId,
+      });
+
+      await fetchMatch();
+    } catch (error) {
+      handleApiError(error);
+    }
   };
   const handleNewBowlerEvent = async (thisEventData) => {
-    await logNewBowler({
-      matchId: matchData.matchInfo.matchId,
-      eventType: thisEventData.eventType,
-      playerId: thisEventData.playerId,
-    });
-    await fetchMatch();
+    try {
+      await logNewBowler({
+        matchId: matchData.matchInfo.matchId,
+        eventType: thisEventData.eventType,
+        playerId: thisEventData.playerId,
+      });
+
+      await fetchMatch();
+    } catch (error) {
+      handleApiError(error);
+    }
   };
 
   if (!matchData || !matchState) return null;
@@ -121,7 +198,7 @@ export default function ScoringDashboard() {
           {/* LEFT (9 cols) */}
           <div className="col-span-9 flex flex-col gap-3 overflow-auto">
             {/* Score Summary */}
-            <ScoreSummary matchState={matchState} teams={matchData.teams} />
+            <ScoreSummary matchState={matchState} matchData={matchData} />
 
             {/* Controls + Ball Info */}
             <div className="grid grid-cols-12 gap-3">
@@ -133,6 +210,10 @@ export default function ScoringDashboard() {
                   matchAllData={matchAllData}
                   onEndOver={handleEndOverEvent}
                   onNextInning={handleChangeInning}
+                  onResetMatch={handleResetMatch}
+                  onRebuildMatch={handleRebuildMatch}
+                  onSwapStriker={handleSwapStriker}
+                  onImpact={handleImpactPlayer}
                   onSelectNewBatter={(batter) => {
                     handleNewBatterEvent({
                       eventType: "NEW_BATTER",

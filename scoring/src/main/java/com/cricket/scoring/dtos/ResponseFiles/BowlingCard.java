@@ -2,6 +2,7 @@ package com.cricket.scoring.dtos.ResponseFiles;
 
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -11,6 +12,6 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class BowlingCard {
-    private List<BowlerCard> bowlers;
+    private List<BowlerCard> bowlers = new ArrayList<>();
 
 }

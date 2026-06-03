@@ -5,7 +5,7 @@ import com.cricket.scoring.entities.enums.BowlingStyle;
 import com.cricket.scoring.entities.enums.PlayerRole;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -13,7 +13,11 @@ import java.util.List;
 
 @Entity
 @Table(name="players")
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Player {
 
     @Id

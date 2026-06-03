@@ -30,6 +30,12 @@ const runs = [
     style: "bg-blue-500 text-white hover:bg-blue-600",
   },
   {
+    label: "5",
+    sub: "FIVE",
+    style:
+      "border-2 border-gray-300 bg-white text-gray-700 hover:border-blue-400",
+  },
+  {
     label: "6",
     sub: "SIX",
     style: "bg-purple-600 text-white hover:bg-purple-700",
@@ -70,10 +76,19 @@ const extras = [
     sub: "ANY_BALL",
     style: "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200",
   },
+  {
+    label: "Undo",
+    sub: "UNDO",
+    style: "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200",
+  },
 ];
 
 const actions = [
-  { label: "END OVER", style: "bg-blue-600 hover:bg-blue-700 text-white" },
+  // { label: "END OVER", style: "bg-blue-600 hover:bg-blue-700 text-white" },
+  {
+    label: "SWAP STRIKER",
+    style: "bg-blue-600 hover:bg-blue-700 text-white",
+  },
   {
     label: "CHANGE BOWLER",
     style: "bg-purple-600 hover:bg-purple-700 text-white",
@@ -84,6 +99,14 @@ const actions = [
   },
   {
     label: "NEXT INNINGS",
+    style: "bg-blue-600 hover:bg-blue-700 text-white",
+  },
+  {
+    label: "RESET MATCH",
+    style: "bg-red-600 hover:bg-red-700 text-white",
+  },
+  {
+    label: "REBUILD MATCH",
     style: "bg-green-500 hover:bg-green-600 text-white",
   },
 ];
@@ -113,6 +136,10 @@ export default function NextBallControls({
   onChangeBowler,
   onEndOver,
   onNextInning,
+  onResetMatch,
+  onRebuildMatch,
+  onSwapStriker,
+  onImpact,
 }) {
   const [showBatterModal, setShowBatterModal] = useState(false);
   const [showBowlerModal, setShowBowlerModal] = useState(false);
@@ -162,7 +189,9 @@ export default function NextBallControls({
   // Players still to bat
   const remainingBatters =
     inning?.battingCard?.batters?.filter(
-      (batterEntry) => batterEntry?.dismissal?.status === "STILL_TO_BAT",
+      (batterEntry) =>
+        batterEntry?.dismissal?.status === "STILL_TO_BAT" ||
+        batterEntry?.dismissal?.status === "RETIRED_HURT",
     ) || [];
 
   const currentBatters =
@@ -170,11 +199,11 @@ export default function NextBallControls({
       ?.filter(
         (batterEntry) =>
           batterEntry?.batter?.playerId === inning?.strikerId ||
-          batterEntry?.batter?.playerId === inning?.nonStrikerId,
+          batterEntry?.batter?.playerId === inning?.nonStrikerId ||
+          batterEntry?.dismissal?.status === "RETIRED_HURT",
       )
       .map((batterEntry) => batterEntry.batter) || [];
 
-  console.log("match data ", matchData);
   // Determine fielding team
   const fieldingTeam =
     matchData?.teams?.homeTeam?.id === matchState?.battingTeamId
@@ -184,11 +213,15 @@ export default function NextBallControls({
   // Fielders / Bowlers
   const fielders = fieldingTeam?.players || [];
 
+  const bowlers =
+    matchData?.teams?.homeTeam?.id === matchState?.battingTeamId
+      ? matchData?.squads?.awayTeamActivePlayers.players
+      : matchData?.squads?.homeTeamActivePlayers.players;
+
   // Available bowlers (exclude current bowler)
-  const availableBowlers = fielders.filter(
+  const availableBowlers = bowlers.filter(
     (player) => player.id !== matchState?.currentBowlerId,
   );
-  console.log(availableBowlers);
 
   const handleAnyBallSubmit = () => {
     const event = {
@@ -241,6 +274,7 @@ export default function NextBallControls({
     const nonStriker = inning?.nonStrikerId;
 
     // Check if bowler is selected
+
     if (!currentBowler) {
       alert("Please select a bowler first.");
       setShowBowlerModal(true);
@@ -268,6 +302,12 @@ export default function NextBallControls({
       onEndOver?.();
     } else if (label === "NEXT INNINGS") {
       onNextInning?.();
+    } else if (label === "RESET MATCH") {
+      onResetMatch?.();
+    } else if (label === "REBUILD MATCH") {
+      onRebuildMatch?.();
+    } else if (label === "SWAP STRIKER") {
+      onSwapStriker?.();
     }
   };
 
@@ -311,11 +351,12 @@ export default function NextBallControls({
   const handleImpactPlayerSubmit = () => {
     const payload = {
       teamId: Number(selectedImpactTeam),
+      eventType: "IMPACT",
       impactInPlayerId: Number(impactIn),
       impactOutPlayerId: Number(impactOut),
     };
-
-    console.log(payload);
+    console.log("payload ", payload);
+    onImpact(payload);
     setShowImpactPlayerModal(false);
     setSelectedImpactTeam("");
     setImpactIn("");

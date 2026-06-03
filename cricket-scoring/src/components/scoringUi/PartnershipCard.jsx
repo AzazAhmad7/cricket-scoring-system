@@ -14,14 +14,21 @@ export default function PartnershipCard({ matchState }) {
 
       {/* Total partnership */}
       <div className="text-center mb-2">
-        <span className="text-lg font-bold text-gray-900">{p.partnershipRuns}</span>
-        <span className="text-xs text-gray-400 ml-1">({p.partnershipBalls})</span>
+        <span className="text-lg font-bold text-gray-900">
+          {`${p.partnershipRuns}* `}
+        </span>
+        <span className="text-xs text-gray-400 ml-1">
+          ({p.partnershipBalls})
+        </span>
       </div>
 
       {/* Individual contributions */}
       <div className="space-y-1.5">
         {p.contributions?.map((c) => (
-          <div key={c.playerId} className="flex justify-between items-center text-xs">
+          <div
+            key={c.playerId}
+            className="flex justify-between items-center text-xs"
+          >
             <span className="text-gray-700 font-medium">{c.name}</span>
             <span className="text-gray-500">
               {c.runs} <span className="text-gray-400">({c.balls})</span>

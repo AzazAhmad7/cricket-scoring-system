@@ -37,24 +37,28 @@ public class ScoreCardServiceImpl implements ScoreCardService {
     public BatterCard updateBattingCard(MatchState matchState, Inning inning, Event event) {
         List<BatterCard> batterCards = matchState.getScoreCard().getInnings().get(matchState.getCurrentInningNumber()-1).getBattingCard().getBatters();
         BatterCard batterCard = batterCards.stream()
-                .filter(bc -> bc.getBatter().getPlayerId().equals(inning.getStrikerId()))
+                .filter(bc -> bc.getBatter().getPlayerId().equals(event.getStrikerId()))
                 .findAny()
-                .orElseThrow(()->new ResourceNotFoundException("Player not found in batterCard with id "+inning.getStrikerId()));
+                .orElseThrow(()->new ResourceNotFoundException("Player not found in batterCard with id "+event.getStrikerId()));
 
 
         //UPDATING SCORING STATS
         updateScoringStatsOfBatter(batterCard, event);
 
         //UPDATE DISMISSAL OF BATTER
-        if(event.getIsWicket() != null && event.getIsWicket()){
+        if(event.getDismissedType() != null){
             BatterCard dismissedBatterCard = batterCards.stream()
                     .filter(bc -> bc.getBatter().getPlayerId().equals(event.getDismissedPlayerId()))
                     .findAny()
-                    .orElseThrow(()->new ResourceNotFoundException("Player not found in batterCard with id "+inning.getStrikerId()));
-            BowlerCard bowlerCard = inning.getBowlingCard().getBowlers().stream()
-                    .filter(bowler -> bowler.getBowler().getPlayerId() == inning.getCurrentBowlerId())
-                    .findAny()
-                    .orElseThrow(()->new ResourceNotFoundException("Bowler not found"));
+                    .orElseThrow(()->new ResourceNotFoundException("Player not found in batterCard with id "+event.getStrikerId()));
+
+            BowlerCard bowlerCard = null;
+            if(Util.isBowlerCreditWicket(event.getDismissedType())){
+                bowlerCard = inning.getBowlingCard().getBowlers().stream()
+                        .filter(bowler -> bowler.getBowler().getPlayerId().equals(inning.getCurrentBowlerId()))
+                        .findAny()
+                        .orElseThrow(()->new ResourceNotFoundException("Bowler not found"));
+            }
             updateDismissalOfBatter(matchState, bowlerCard, dismissedBatterCard, event);
         }
 
@@ -68,6 +72,12 @@ public class ScoreCardServiceImpl implements ScoreCardService {
     }
     @Override
     public BowlingCard updateBowlingCard(MatchState matchState, Inning inning, Event event) {
+        if(event.getDismissedType() == DismissalType.RETIRED_HURT){
+            return inning.getBowlingCard();
+        }
+        if(event.getDismissedType() == DismissalType.RETIRED_OUT){
+            return inning.getBowlingCard();
+        }
         List<BowlerCard> bowlerCards = inning.getBowlingCard().getBowlers();
         BowlerCard bowlerCard = bowlerCards.stream()
                 .filter(bowler -> bowler.getBowler().getPlayerId().equals(inning.getCurrentBowlerId()))
@@ -350,6 +360,9 @@ public class ScoreCardServiceImpl implements ScoreCardService {
         return batterCard.getPhases();
     }
     public ScoringStats updateScoringStatsOfBatter(BatterCard batterCard, Event event){
+        if(event.getDismissedType() == DismissalType.RETIRED_HURT || event.getDismissedType() == DismissalType.RETIRED_OUT){
+            return batterCard.getScoring();
+        }
         if(batterCard.getScoring() == null){
             ScoringStats scoringStats = ScoringStats.builder()
                     .runs(null)
@@ -378,13 +391,19 @@ public class ScoreCardServiceImpl implements ScoreCardService {
         return batterCard.getScoring();
     }
     public DismissalInfo updateDismissalOfBatter(MatchState matchState, BowlerCard bowlerCard ,BatterCard batterCard, Event event){
-        if(batterCard.getDismissal().getStatus() != BattingStatus.NOT_OUT){
+        if(batterCard.getDismissal().getStatus() != BattingStatus.NOT_OUT && batterCard.getDismissal().getStatus() != BattingStatus.RETIRED_HURT){
             throw new RuntimeConflictException("This batter is not batting");
         }
         Inning inning = Util.getCurrentInning(matchState);
-        batterCard.getDismissal().setStatus(BattingStatus.OUT);
+        if(event.getDismissedType() == DismissalType.RETIRED_HURT){
+            batterCard.getDismissal().setStatus(BattingStatus.RETIRED_HURT);
+        } else {
+            batterCard.getDismissal().setStatus(BattingStatus.OUT);
+        }
         batterCard.getDismissal().setDismissalType(event.getDismissedType());
-        batterCard.getDismissal().setBowlerId(inning.getCurrentBowlerId());
+        if(Util.isBowlerCreditWicket(event.getDismissedType())){
+            batterCard.getDismissal().setBowlerId(inning.getCurrentBowlerId());
+        }
         batterCard.getDismissal().setFielderId(event.getFielderId());
         String dismissalText ="";
         if(event.getDismissedType() == BOWLED){
@@ -398,10 +417,18 @@ public class ScoreCardServiceImpl implements ScoreCardService {
             dismissalText +="lbw "+bowlerCard.getBowler().getPlayerName();
         } else if (event.getDismissedType()==RUN_OUT) {
             Player fielder = playerService.getPlayerById(event.getFielderId());
-            dismissalText +="run out "+fielder.getShortName();
+            dismissalText +="run out ("+fielder.getShortName()+")";
         } else if(event.getDismissedType()==STUMPED){
             Player fielder = playerService.getPlayerById(event.getFielderId());
             dismissalText +="st "+fielder.getShortName()+" b "+bowlerCard.getBowler().getPlayerName();
+        } else if(event.getDismissedType() == RETIRED_HURT){
+            dismissalText = "retired hurt";
+        } else if(event.getDismissedType() == RETIRED_OUT){
+            dismissalText = "retired out";
+        }else if(event.getDismissedType() == OBSTRUCTING_THE_FIELD){
+            dismissalText = "obstructing the field";
+        }else if(event.getDismissedType() == TIMED_OUT){
+            dismissalText = "timed out";
         }else{
             dismissalText+=event.getDismissedType();
         }
@@ -528,7 +555,7 @@ public class ScoreCardServiceImpl implements ScoreCardService {
         p.setPartnershipRuns(p.getPartnershipRuns()+runs);
 
 
-        boolean legal = event.getEventType() != EventType.WIDE && event.getEventType() != EventType.NO_BALL;
+        boolean legal = event.getEventType() != EventType.WIDE && event.getEventType() != EventType.NO_BALL && event.getDismissedType() != RETIRED_OUT && event.getDismissedType() != RETIRED_HURT;
 
         if(legal){
             p.setPartnershipBalls(p.getPartnershipBalls()+1);
@@ -579,7 +606,7 @@ public class ScoreCardServiceImpl implements ScoreCardService {
         int balls = inning.getScoreSummary().getBalls();
         int totalBalls = Util.overBallsToBalls(oversCompleted, balls);
 
-        boolean legal = event.getEventType() != EventType.WIDE && event.getEventType() != EventType.NO_BALL;
+        boolean legal = event.getEventType() != EventType.WIDE && event.getEventType() != EventType.NO_BALL && event.getDismissedType() != RETIRED_OUT && event.getDismissedType() != RETIRED_HURT;
 
         int currentOverNumber;
 
@@ -603,7 +630,7 @@ public class ScoreCardServiceImpl implements ScoreCardService {
 
     public OverProgression updateOverProgression(MatchState matchState, Inning inning, Event event){
         int totalBalls = Util.overBallsToBalls(inning.getScoreSummary().getOvers(), inning.getScoreSummary().getBalls());
-        boolean legal = event.getEventType() != EventType.WIDE && event.getEventType() != EventType.NO_BALL;
+        boolean legal = event.getEventType() != EventType.WIDE && event.getEventType() != EventType.NO_BALL && event.getDismissedType() != RETIRED_OUT && event.getDismissedType() != RETIRED_HURT;
         int currentOverNumber;
 
         if(legal){
@@ -611,6 +638,7 @@ public class ScoreCardServiceImpl implements ScoreCardService {
         }else{
             currentOverNumber = (totalBalls/6)+1;
         }
+        System.out.println(currentOverNumber);
         List<OverSummary> overSummaries = inning.getOverProgression().getOvers();
         OverSummary currentOver = overSummaries.get(currentOverNumber-1);
         currentOver.setOverNumber(currentOverNumber);
@@ -799,6 +827,7 @@ public class ScoreCardServiceImpl implements ScoreCardService {
                 .build();
         return phaseStats;
     }
+
 
     private void updateBatterRuns(BatterCard batterCard, int runsOfBat){
         int prevRuns = batterCard.getScoring().getRuns() == null ? 0 : batterCard.getScoring().getRuns();

@@ -25,6 +25,7 @@ public enum EventType {
     LEG_BYE,
     PENALTY,
     ANY_BALL,
+    UNDO,
 
     WICKET,
     WICKET_FALL,
@@ -50,6 +51,8 @@ public enum EventType {
 
     BALL_EVENT,
     WICKET_EVENT,
-    BOWLED, CAUGHT, LBW, STUMPED, HIT_WICKET, OVER_EVENT
+    BOWLED, CAUGHT, LBW, STUMPED, HIT_WICKET, OVER_EVENT,
+
+    IMPACT
 
 }
