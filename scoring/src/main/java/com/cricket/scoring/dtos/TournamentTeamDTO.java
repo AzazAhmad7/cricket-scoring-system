@@ -14,8 +14,8 @@ import lombok.*;
 @Builder
 public class TournamentTeamDTO {
     private Long id;
-    private Tournament tournament;
-    private Team team;
+    private CreateTournamentResponse tournament;
+    private TeamDTO team;
     private Integer seed;
     private String groupName;
 }

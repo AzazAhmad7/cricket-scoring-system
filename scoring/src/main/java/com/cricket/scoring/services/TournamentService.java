@@ -9,4 +9,5 @@ public interface TournamentService {
     List<CreateTournamentResponse> getAllTournaments();
     CreateTournamentResponse getTournamentById(Long id);
     CreateTournamentResponse createTournament(CreateTournametRequest request);
+    void deleteTournament(Long id);
 }

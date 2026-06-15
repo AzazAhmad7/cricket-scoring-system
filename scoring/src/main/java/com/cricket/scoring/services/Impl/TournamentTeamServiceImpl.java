@@ -37,6 +37,12 @@ public class TournamentTeamServiceImpl implements TournamentTeamService {
                 .map((element) -> modelMapper.map(element, TournamentTeamDTO.class))
                 .collect(Collectors.toList());
     }
+
+    public TournamentTeamDTO getTournamentTeamById(Long tournamentId) {
+        TournamentTeam tournamentTeam = tournamentTeamRepository.findById(tournamentId).orElseThrow(()-> new ResourceNotFoundException("Tournament not found"));
+        return modelMapper.map(tournamentTeam, TournamentTeamDTO.class);
+    }
+
     @Transactional
     public void addTeams(AddTeamsToTournamentRequest request) {
         Tournament tournament = tournamentRepository.findById(request.getTournamentId()).orElseThrow(()-> new ResourceNotFoundException("Tournament not found "+request.getTournamentId()));

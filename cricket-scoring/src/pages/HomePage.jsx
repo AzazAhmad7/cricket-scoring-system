@@ -6,6 +6,7 @@ import {
   FaPlusCircle,
   FaPlayCircle,
   FaEdit,
+  FaUser,
 } from "react-icons/fa";
 import { GiCricketBat } from "react-icons/gi";
 import { getAllMatches } from "../services/api";
@@ -46,6 +47,12 @@ export default function HomePage() {
       title: "Tournament",
       icon: <FaTrophy size={36} />,
       color: "bg-purple-600",
+      path: "/tournaments",
+    },
+    {
+      title: "Create Tournament",
+      icon: <FaPlusCircle size={36} />,
+      color: "bg-purple-600",
       path: "/tournaments/create",
     },
     {
@@ -59,6 +66,18 @@ export default function HomePage() {
       icon: <FaPlusCircle size={36} />,
       color: "bg-green-600",
       path: "/teams/create",
+    },
+    {
+      title: "Players",
+      icon: <FaUser size={36} />,
+      color: "bg-cyan-600",
+      path: "/players",
+    },
+    {
+      title: "Create Player",
+      icon: <FaPlusCircle size={36} />,
+      color: "bg-emerald-600",
+      path: "/players/create",
     },
   ];
 

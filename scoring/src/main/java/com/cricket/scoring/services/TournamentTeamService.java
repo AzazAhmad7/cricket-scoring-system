@@ -10,4 +10,6 @@ public interface TournamentTeamService {
     List<TournamentTeamDTO> getAllTeamsOfTournament(Long tournamentId);
 
     void addTeams(AddTeamsToTournamentRequest request);
+
+    TournamentTeamDTO getTournamentTeamById(Long tournamentId);
 }

@@ -29,7 +29,7 @@ public class PlayerController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Player> getPlayerById(@PathVariable Long id) {
+    public ResponseEntity<PlayerDTO> getPlayerById(@PathVariable Long id) {
         return ResponseEntity.ok(playerService.getPlayerById(id));
     }
     @GetMapping
@@ -42,18 +42,23 @@ public class PlayerController {
         playerService.deletePlayer(id);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<Player> updatePlayer(@PathVariable Long id, @RequestBody Player player){
+        return ResponseEntity.ok(playerService.updatePlayer(id, player));
+    }
 
-    @PatchMapping("/{playerId}/teams/{teamId}")
+
+    @PutMapping("/{playerId}/teams/{teamId}")
     public ResponseEntity<Player> assignTeamToPlayer(@PathVariable Long playerId,@PathVariable Long teamId) {
         return ResponseEntity.ok(playerService.assignPlayerToTeam(playerId, teamId));
     }
 
-    @PatchMapping("/teams/{teamId}")
+    @PutMapping("/teams/{teamId}")
     public ResponseEntity<List<Player>> assignTeamToPlayers(@RequestBody List<Long> playerIds, @PathVariable Long teamId) {
         return ResponseEntity.ok(playerService.assignPlayersToTeams(playerIds, teamId));
     }
 
-    @PatchMapping("/{playerId}/remove")
+    @PutMapping("/{playerId}/remove")
     public ResponseEntity<Player> removePlayerFromTeam(@PathVariable Long playerId){
         return ResponseEntity.ok(playerService.removePlayerFromTeam(playerId));
     }

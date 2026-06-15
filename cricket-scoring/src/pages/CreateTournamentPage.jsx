@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { handleApiError, createTournament } from "../../services/api";
+import { handleApiError, createTournament } from "../services/api";
+import { useNavigate } from "react-router-dom";
 
 export default function CreateTournament() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     location: "",
@@ -10,7 +12,7 @@ export default function CreateTournament() {
     maxTeams: 4,
     startDate: "",
     endDate: "",
-    logoUrl: ""
+    logoUrl: "",
   });
 
   const handleChange = (e) => {
@@ -24,10 +26,11 @@ export default function CreateTournament() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    console.log(formData);
     try {
       await createTournament(formData);
+      alert("Tournament created successfully");
+
+      navigate("/tournaments");
     } catch (error) {
       handleApiError(error);
     }

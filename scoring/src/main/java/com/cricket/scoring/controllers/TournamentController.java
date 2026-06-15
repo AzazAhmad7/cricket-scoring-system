@@ -3,6 +3,7 @@ package com.cricket.scoring.controllers;
 import com.cricket.scoring.dtos.AddTeamsToTournamentRequest;
 import com.cricket.scoring.dtos.CreateTournamentResponse;
 import com.cricket.scoring.dtos.CreateTournametRequest;
+import com.cricket.scoring.dtos.TournamentTeamDTO;
 import com.cricket.scoring.services.TournamentService;
 import com.cricket.scoring.services.TournamentTeamService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,10 @@ public class TournamentController {
     public ResponseEntity<List<CreateTournamentResponse>> getAllTournaments(){
         return ResponseEntity.ok(tournamentService.getAllTournaments());
     }
-
+    @GetMapping("/{tournamentId}")
+    public ResponseEntity<CreateTournamentResponse> getTournamentById(@PathVariable Long tournamentId){
+        return ResponseEntity.ok(tournamentService.getTournamentById(tournamentId));
+    }
     @PostMapping("/create")
     public ResponseEntity<CreateTournamentResponse> createTournament(@RequestBody CreateTournametRequest request){
         return new ResponseEntity<>(tournamentService.createTournament(request), HttpStatus.CREATED);
@@ -33,5 +37,10 @@ public class TournamentController {
     public ResponseEntity<Void> addTeamsToTournament(@RequestBody AddTeamsToTournamentRequest request) {
         tournamentTeamService.addTeams(request);
         return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{tournamentId}")
+    public void deleteTournament(@PathVariable Long tournamentId){
+        tournamentService.deleteTournament(tournamentId);
     }
 }

@@ -64,17 +64,17 @@ public class PointsTableServiceImpl implements PointsTableService {
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(()-> new ResourceNotFoundException("Tournament not found with id "+tournamentId));
         List<TournamentTeamDTO> tournamentTeamDTOS = tournamentTeamService.getAllTeamsOfTournament(tournament.getId());
-        List<Team> teams = new ArrayList<>();
+        List<TeamDTO> teamsDtos = new ArrayList<>();
         for(TournamentTeamDTO tt : tournamentTeamDTOS) {
-            teams.add(tt.getTeam());
+            teamsDtos.add(tt.getTeam());
         }
 
         List<PointsTable> pointsTables = new ArrayList<>();
 
-        for(Team team: teams){
+        for(TeamDTO teamDTO: teamsDtos){
             PointsTable pt = PointsTable.builder()
                                 .tournament(tournament)
-                                .team(team)
+                                .team(modelMapper.map(teamDTO, Team.class))
                                 .matchesPlayed(0)
                                 .matchesWon(0)
                                 .matchesLost(0)

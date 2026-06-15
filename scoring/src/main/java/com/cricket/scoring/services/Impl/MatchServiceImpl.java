@@ -43,6 +43,7 @@ public class MatchServiceImpl implements MatchService {
     @Override
     public MatchAllData createMatch(CreateMatchRequest request) {
         Match match = createMatchEntity(request);
+        match.setStatus(MatchStatus.SCHEDULED);
         Match savedMatch = matchRepository.save(match);
         Squad squad = buildSquad(request);
         saveMatchSquad(savedMatch, squad);
@@ -458,6 +459,9 @@ public class MatchServiceImpl implements MatchService {
         List<BowlerStatsDTO> aBowlerStatsList = new ArrayList<>();
 
         for(Player player : allPlayers){
+            if(player.getTeam() == null){
+                continue;
+            }
             if(player.getTeam().getId().equals(savedMatch.getHomeTeam().getId())){
                 hPlayers.add(player);
                 if(batterStatsService.statsExistByPlayerId(player.getId())){
@@ -481,6 +485,9 @@ public class MatchServiceImpl implements MatchService {
             }
         }
         for(Player player : allPlayers){
+            if(player.getTeam() == null){
+                continue;
+            }
             if(player.getTeam().getId().equals(savedMatch.getAwayTeam().getId())){
                 aPlayers.add(player);
                 if(batterStatsService.statsExistByPlayerId(player.getId())){

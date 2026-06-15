@@ -1,20 +1,21 @@
 package com.cricket.scoring.services.Impl;
 
 import com.cricket.scoring.dtos.PlayerDTO;
-import com.cricket.scoring.dtos.TeamDTO;
+import com.cricket.scoring.dtos.TeamDetailsDTO;
 import com.cricket.scoring.entities.Player;
 import com.cricket.scoring.entities.Team;
 import com.cricket.scoring.exceptions.ResourceNotFoundException;
 import com.cricket.scoring.repositories.PlayerRepository;
-import com.cricket.scoring.repositories.TeamRepository;
 import com.cricket.scoring.services.PlayerService;
 import com.cricket.scoring.services.TeamService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,8 +37,19 @@ public class PlayerServiceImpl implements PlayerService {
     }
 
     @Override
-    public Player getPlayerById(Long id) {
-        return playerRepository.findById(id).orElseThrow(()->new ResourceNotFoundException("Player not found with id: " + id));
+    public PlayerDTO getPlayerById(Long id) {
+        Player player = playerRepository.findById(id).orElseThrow(()->new ResourceNotFoundException("Player not found with id: " + id));
+        PlayerDTO playerDTO = modelMapper.map(player, PlayerDTO.class);
+        TeamDetailsDTO dto = null;
+        if(player.getTeam() != null) {
+             dto = TeamDetailsDTO.builder()
+                    .id(player.getId())
+                    .name(player.getTeam().getName())
+                    .shortName(player.getTeam().getShortName())
+                    .build();
+        }
+        playerDTO.setTeamDTO(dto);
+        return playerDTO;
     }
 
     @Override
@@ -51,57 +63,61 @@ public class PlayerServiceImpl implements PlayerService {
     }
 
     public void deletePlayer(Long id) {
-        playerRepository.deleteById(id);
+        Player player = playerRepository.findById(id).orElseThrow(()->new ResourceNotFoundException("Player not found with id: " + id));
+        playerRepository.delete(player);
     }
 
     @Override
+    @Transactional
     public Player assignPlayerToTeam(Long playerId, Long teamId) {
-        Player player = getPlayerById(playerId);
+        Player player = playerRepository.findById(playerId).orElseThrow(()->new ResourceNotFoundException("Player not found with id: " + playerId));
         Team team = modelMapper.map(teamService.getTeam(teamId), Team.class);
         player.setTeam(team);
         return playerRepository.save(player);
     }
 
     @Override
+    @Transactional
     public List<Player> assignPlayersToTeams(List<Long> playerIds, Long teamId) {
         Team team = modelMapper.map(teamService.getTeam(teamId), Team.class);
         List<Player> players = new ArrayList<>();
         for(Long playerId : playerIds) {
-            Player player = getPlayerById(playerId);
+            Player player = playerRepository.findById(playerId).orElseThrow(()->new ResourceNotFoundException("Player not found with id: " + playerId));
             player.setTeam(team);
             players.add(player);
         }
-        return players;
+        return playerRepository.saveAll(players);
     }
 
     @Override
+    @Transactional
     public Player removePlayerFromTeam(Long playerId) {
-        Player player = getPlayerById(playerId);
+        Player player = playerRepository.findById(playerId).orElseThrow(()->new ResourceNotFoundException("Player not found with id: " + playerId));
         player.setTeam(null);
         return playerRepository.save(player);
     }
 
     @Override
-    public Player updatePlayer(Long playerId, Player Player) {
+    public Player updatePlayer(Long playerId, Player playerRequest) {
         Player player = playerRepository.findById(playerId).orElseThrow(()->new ResourceNotFoundException("Player not found with id: " + playerId));
-        if(player.getExternalPlayerId() != null) player.setExternalPlayerId(player.getExternalPlayerId());
-        if(player.getFullName()!= null) player.setFullName(player.getFullName());
-        if(player.getShortName() != null) player.setShortName(player.getShortName());
-        if(player.getJerseyNumber() != null) player.setJerseyNumber(player.getJerseyNumber());
-        if(player.getDateOfBirth() != null) player.setDateOfBirth(player.getDateOfBirth());
-        if(player.getNationality() != null) player.setNationality(player.getNationality());
-        if(player.getRole() != null) player.setRole(player.getRole());
-        if(player.getBattingStyle() != null) player.setBattingStyle(player.getBattingStyle());
-        if(player.getBowlingStyle() != null) player.setBowlingStyle(player.getBowlingStyle());
-        if(player.getCaptain() != null) player.setCaptain(player.getCaptain());
-        if(player.getWicketKeeper() != null) player.setWicketKeeper(player.getWicketKeeper());
-        if(player.getBattingOrder() != null) player.setBattingOrder(player.getBattingOrder());
-        if(player.getActive() != null) player.setActive(player.getActive());
-        if(player.getMatchesPlayed() != null) player.setMatchesPlayed(player.getMatchesPlayed());
-        if(player.getRuns() != null) player.setRuns(player.getRuns());
-        if(player.getWickets() != null) player.setWickets(player.getWickets());
-        if(player.getBattingAverage() != null) player.setBattingAverage(player.getBattingAverage());
-        if(player.getBowlingAverage() != null) player.setBowlingAverage(player.getBowlingAverage());
+        if(playerRequest.getExternalPlayerId() != null) player.setExternalPlayerId(playerRequest.getExternalPlayerId());
+        if(playerRequest.getFullName()!= null) player.setFullName(playerRequest.getFullName());
+        if(playerRequest.getShortName() != null) player.setShortName(playerRequest.getShortName());
+        if(playerRequest.getJerseyNumber() != null) player.setJerseyNumber(playerRequest.getJerseyNumber());
+        if(playerRequest.getDateOfBirth() != null) player.setDateOfBirth(playerRequest.getDateOfBirth());
+        if(playerRequest.getNationality() != null) player.setNationality(playerRequest.getNationality());
+        if(playerRequest.getRole() != null) player.setRole(playerRequest.getRole());
+        if(playerRequest.getBattingStyle() != null) player.setBattingStyle(playerRequest.getBattingStyle());
+        if(playerRequest.getBowlingStyle() != null) player.setBowlingStyle(playerRequest.getBowlingStyle());
+        if(playerRequest.getCaptain() != null) player.setCaptain(playerRequest.getCaptain());
+        if(playerRequest.getWicketKeeper() != null) player.setWicketKeeper(playerRequest.getWicketKeeper());
+        if(playerRequest.getBattingOrder() != null) player.setBattingOrder(playerRequest.getBattingOrder());
+        if(playerRequest.getActive() != null) player.setActive(playerRequest.getActive());
+        if(playerRequest.getMatchesPlayed() != null) player.setMatchesPlayed(playerRequest.getMatchesPlayed());
+        if(playerRequest.getRuns() != null) player.setRuns(playerRequest.getRuns());
+        if(playerRequest.getWickets() != null) player.setWickets(playerRequest.getWickets());
+        if(playerRequest.getBattingAverage() != null) player.setBattingAverage(playerRequest.getBattingAverage());
+        if(playerRequest.getBowlingAverage() != null) player.setBowlingAverage(playerRequest.getBowlingAverage());
         return playerRepository.save(player);
     }
 }

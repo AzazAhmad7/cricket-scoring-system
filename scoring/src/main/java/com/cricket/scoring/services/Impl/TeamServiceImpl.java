@@ -50,7 +50,8 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public void deleteTeam(Long teamId) {
-        teamRepository.deleteById(teamId);
+        Team team = teamRepository.findById(teamId).orElseThrow(() -> new ResourceAccessException("Team not found with id " + teamId));
+        teamRepository.delete(team);
     }
 
     @Override

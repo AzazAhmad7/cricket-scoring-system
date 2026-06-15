@@ -127,6 +127,39 @@ export const getTeamById = async (id) => {
   return res.data.data ?? res.data;
 };
 
+//PLAYER APIS
+
+export const getAllPlayers = async () => {
+  const res = await axios.get(`${API}/players`);
+  return res.data.data ?? res.data;
+};
+
+export const getPlayerById = async (id) => {
+  const res = await axios.get(`${API}/players/${id}`);
+  return res.data.data ?? res.data;
+};
+
+export const deletePlayer = async (id) => {
+  const res = await axios.delete(`${API}/players/${id}`);
+  return res.data.data ?? res.data;
+};
+
+export const createPlayer = async (player) => {
+  const res = await axios.post(`${API}/players/create`, player);
+  return res.data.data ?? res.data;
+};
+export const updatePlayer = async (playerId, request) => {
+  console.log("update", request);
+  const res = await axios.put(`${API}/players/${playerId}`, request);
+  return res.data.data ?? res.data;
+};
+
+export const assignTeamToPlayer = async (playerId, teamId) => {
+  const response = await axios.put(`${API}/players/${playerId}/teams/${teamId}`);
+
+  return response.data;
+};
+
 // =========================
 // VENUE APIs
 // =========================
@@ -144,6 +177,32 @@ export const getAllTournaments = async () => {
 export const createTournament = async (request) => {
   const res = await axios.post(`${API}/tournaments/create`, request);
   return res.data;
+};
+
+export const deleteTournament = async (id) => {
+  const res = await axios.delete(`${API}/tournaments/${id}`);
+  return res.data;
+};
+export const getTournamentById = async (id) => {
+  const res = await axios.get(`${API}/tournaments/${id}`);
+  return res.data.data ?? res.data;
+};
+
+//tournamentteam apis
+export const getAllTeamsOfTournament = async (id) => {
+  const res = await axios.get(`${API}/tournamentTeams/${id}`);
+  return res.data.data ?? res.data;
+};
+
+export const assignTeamsToTournament = async (tournamentId, teamIds) => {
+  console.log("tournamentId ", tournamentId);
+  console.log("teamId ", teamIds);
+  const payload = {
+    tournamentId: tournamentId,
+    teamIds: teamIds,
+  };
+  console.log(payload);
+  const res = await axios.post(`${API}/tournaments/teams`, payload);
 };
 
 //ERROR HANDLING

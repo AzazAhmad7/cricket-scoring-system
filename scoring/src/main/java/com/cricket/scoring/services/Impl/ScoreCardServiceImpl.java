@@ -411,15 +411,15 @@ public class ScoreCardServiceImpl implements ScoreCardService {
         } else if (event.getDismissedType()==CAUGHT_AND_BOWLED) {
             dismissalText +="c & b "+bowlerCard.getBowler().getPlayerName();
         }else if(event.getDismissedType()==CAUGHT){
-            Player fielder = playerService.getPlayerById(event.getFielderId());
+            PlayerDTO fielder = playerService.getPlayerById(event.getFielderId());
             dismissalText +="c "+fielder.getShortName()+" b "+bowlerCard.getBowler().getPlayerName();
         } else if (event.getDismissedType()==LBW) {
             dismissalText +="lbw "+bowlerCard.getBowler().getPlayerName();
         } else if (event.getDismissedType()==RUN_OUT) {
-            Player fielder = playerService.getPlayerById(event.getFielderId());
+            PlayerDTO fielder = playerService.getPlayerById(event.getFielderId());
             dismissalText +="run out ("+fielder.getShortName()+")";
         } else if(event.getDismissedType()==STUMPED){
-            Player fielder = playerService.getPlayerById(event.getFielderId());
+            PlayerDTO fielder = playerService.getPlayerById(event.getFielderId());
             dismissalText +="st "+fielder.getShortName()+" b "+bowlerCard.getBowler().getPlayerName();
         } else if(event.getDismissedType() == RETIRED_HURT){
             dismissalText = "retired hurt";
@@ -446,8 +446,8 @@ public class ScoreCardServiceImpl implements ScoreCardService {
         // CASE 1: second opener selected -> create first partnership
         if(inning.getStrikerId() != null && inning.getNonStrikerId() == null && partnershipCard.getPartnerships().isEmpty()){
             List<PartnershipContribution> contributions = new ArrayList<>();
-            Player strikerPlayer = playerService.getPlayerById(inning.getStrikerId());
-            Player nonStrikerPlayer = playerService.getPlayerById(playerId);
+            PlayerDTO strikerPlayer = playerService.getPlayerById(inning.getStrikerId());
+            PlayerDTO nonStrikerPlayer = playerService.getPlayerById(playerId);
             PartnershipContribution striker = PartnershipContribution.builder()
                     .playerId(inning.getStrikerId())
                     .name(strikerPlayer.getFullName())
@@ -695,7 +695,7 @@ public class ScoreCardServiceImpl implements ScoreCardService {
     @Override
     public List<FallOfWicket> updateFOW(Long playerId, MatchState matchState, Inning inning, Event event) {
         List<FallOfWicket> fallOfWickets = inning.getFallOfWickets();
-        Player player = playerService.getPlayerById(playerId);
+        PlayerDTO player = playerService.getPlayerById(playerId);
         FallOfWicket fallOfWicket = FallOfWicket.builder()
                 .scoreAtFall(inning.getScoreSummary().getRuns())
                 .over(Util.overBalls(Util.overBallsToBalls(inning.getScoreSummary().getOvers(), inning.getScoreSummary().getBalls())))

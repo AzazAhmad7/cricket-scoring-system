@@ -33,6 +33,8 @@ public class PlayerDTO {
     private Integer battingOrder;
     private Boolean active;
 
+    private TeamDetailsDTO teamDTO;
+
     private Integer matchesPlayed;
     private Integer runs;
     private Integer wickets;

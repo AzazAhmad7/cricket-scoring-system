@@ -1,5 +1,6 @@
 package com.cricket.scoring.dtos;
 
+import com.cricket.scoring.entities.TournamentTeam;
 import com.cricket.scoring.entities.enums.TournamentStatus;
 import com.cricket.scoring.entities.enums.TournamentType;
 import lombok.*;
@@ -32,7 +33,7 @@ public class CreateTournamentResponse {
     private LocalDate endDate;
     private TournamentStatus status;
 
-    private List<MatchDTO> matchDTOList = new ArrayList<>();
+    private List<MatchDTO> matches = new ArrayList<>();
 
     // OWNER
     private Long createdByUserId;

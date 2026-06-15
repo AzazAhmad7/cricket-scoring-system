@@ -66,6 +66,7 @@ public class Player {
     @JoinColumn(name="team_id")
     @JsonIgnore
     private Team team;
+
     /*
       Player can appear in many match squads
      */

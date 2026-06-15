@@ -12,6 +12,7 @@ import com.cricket.scoring.entities.TournamentTeam;
 import com.cricket.scoring.entities.enums.TournamentStatus;
 import com.cricket.scoring.exceptions.ResourceNotFoundException;
 import com.cricket.scoring.repositories.TournamentRepository;
+import com.cricket.scoring.repositories.TournamentTeamRepository;
 import com.cricket.scoring.services.JsonFileService;
 import com.cricket.scoring.services.PointsTableService;
 import com.cricket.scoring.services.TournamentService;
@@ -31,6 +32,7 @@ public class TournamentServiceImpl implements TournamentService {
     private final TournamentRepository tournamentRepository;
     private final ModelMapper modelMapper;
     private final PointsTableService pointsTableService;
+    private final TournamentTeamRepository tournamentTeamRepository;
 
     @Override
     public List<CreateTournamentResponse> getAllTournaments() {
@@ -63,5 +65,11 @@ public class TournamentServiceImpl implements TournamentService {
 
         pointsTableService.generatePointsTable(savedTournament.getId());
         return response;
+    }
+
+    @Override
+    public void deleteTournament(Long id) {
+        Tournament tournament = tournamentRepository.findById(id).orElseThrow(()-> new ResourceNotFoundException("Tournament not found with id "+id));
+        tournamentRepository.delete(tournament);
     }
 }
