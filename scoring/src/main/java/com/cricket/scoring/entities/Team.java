@@ -8,11 +8,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name="teams")
+@Table(
+        name = "teams",
+        indexes = {
+                @Index(name = "idx_team_name", columnList = "name"),
+                @Index(name = "idx_team_country", columnList = "country"),
+                @Index(name = "idx_team_active", columnList = "active")
+        }
+)
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Team {
 
@@ -20,46 +27,83 @@ public class Team {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable=false, unique=true)
-    private String name; // India
+    @Column(
+            nullable = false,
+            unique = true,
+            length = 100
+    )
+    private String name;
 
-    @OneToMany(mappedBy = "team")
-    private List<TournamentTeam> tournaments = new ArrayList<>();
+    @Column(length = 10)
+    private String shortName;
 
-    private String shortName; // IND
-
+    @Column(length = 100)
     private String nickname;
 
+    @Column(length = 100)
     private String country;
 
+    @Column(length = 500)
     private String logoUrl;
 
+    @Column(length = 20)
     private String primaryColor;
 
+    @Column(length = 100)
     private String coachName;
 
     private Integer ranking;
 
-    private Boolean active;
-
+    @Builder.Default
+    private Boolean active = true;
 
     /*
-      matches where team is home side
-    */
+     * Tournament Registrations
+     */
+    @OneToMany(
+            mappedBy = "team",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @JsonIgnore
+    @Builder.Default
+    private List<TournamentTeam> tournaments = new ArrayList<>();
+
+    /*
+     * Matches as Home Team
+     * No Cascade - deleting a team should not delete matches
+     */
     @OneToMany(mappedBy = "homeTeam")
+    @JsonIgnore
+    @Builder.Default
     private List<Match> homeMatches = new ArrayList<>();
 
-
     /*
-      matches where team is away side
-    */
+     * Matches as Away Team
+     */
     @OneToMany(mappedBy = "awayTeam")
+    @JsonIgnore
+    @Builder.Default
     private List<Match> awayMatches = new ArrayList<>();
 
+    /*
+     * Players
+     * No Cascade - players may transfer to another team
+     */
+    @OneToMany(mappedBy = "team")
+    @JsonIgnore
+    @Builder.Default
+    private List<Player> players = new ArrayList<>();
 
     /*
-      squad players
-    */
-    @OneToMany(mappedBy="team")
-    private List<Player> players = new ArrayList<>();
+     * Points Table Entries
+     */
+    @OneToMany(
+            mappedBy = "team",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @JsonIgnore
+    @Builder.Default
+    private List<PointsTable> pointsTableEntries = new ArrayList<>();
 }

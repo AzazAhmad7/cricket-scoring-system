@@ -3,8 +3,11 @@ package com.cricket.scoring.entities;
 import com.cricket.scoring.entities.enums.MatchFormat;
 import com.cricket.scoring.entities.enums.MatchStatus;
 import com.cricket.scoring.entities.enums.TossDecision;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,83 +16,132 @@ import java.util.List;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
-@Entity
+@AllArgsConstructor
 @Builder
-@Table(name="matches")
+@Entity
+@Table(
+        name = "matches",
+        indexes = {
+                @Index(name = "idx_match_tournament", columnList = "tournament_id"),
+                @Index(name = "idx_match_home_team", columnList = "home_team_id"),
+                @Index(name = "idx_match_away_team", columnList = "away_team_id"),
+                @Index(name = "idx_match_status", columnList = "status"),
+                @Index(name = "idx_match_date", columnList = "match_date")
+        }
+)
 public class Match {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String externalMatchId; // optional feed id
+    @Column(unique = true)
+    private String externalMatchId;
 
-    private String matchName; // India vs Australia
+    @Column(nullable = false)
+    private String matchName;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tournament_id")
+    @JsonIgnore
     private Tournament tournament;
 
     @Enumerated(EnumType.STRING)
-    private MatchFormat format; // T20 ODI TEST
+    @Column(nullable = false)
+    private MatchFormat format;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private MatchStatus status;
-    // SCHEDULED, LIVE, INNINGS_BREAK, COMPLETED
 
-    private Long competition; // IPL
-    private String season; // 2026
+    private Long competition;
+
+    private String season;
+
     private Integer matchNumber;
 
     private LocalDate matchDate;
+
     private LocalDateTime startTime;
 
     private Integer totalOvers;
-    private Integer ballsPerOver;
 
-    @ManyToOne
-    @JoinColumn(name="home_team_id")
+    @Builder.Default
+    private Integer ballsPerOver = 6;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "home_team_id", nullable = false)
     private Team homeTeam;
 
-    @ManyToOne
-    @JoinColumn(name="away_team_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "away_team_id", nullable = false)
     private Team awayTeam;
 
-    @ManyToOne
-    @JoinColumn(name="venue_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "venue_id")
     private Venue venue;
 
-    // Toss
-    @ManyToOne
-    @JoinColumn(name="toss_winner_team_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "toss_winner_team_id")
     private Team tossWinner;
 
     @Enumerated(EnumType.STRING)
     private TossDecision tossDecision;
-    // BAT / BOWL
 
     // Rules
-    private Boolean drsEnabled;
-    private Integer reviewsPerTeam;
-    private Boolean superOverEnabled;
-    private Boolean dlsEnabled;
-    private Boolean impactPlayerEnabled;
+    @Builder.Default
+    private Boolean drsEnabled = false;
 
-    // Powerplay config
+    @Builder.Default
+    private Integer reviewsPerTeam = 0;
+
+    @Builder.Default
+    private Boolean superOverEnabled = false;
+
+    @Builder.Default
+    private Boolean dlsEnabled = false;
+
+    @Builder.Default
+    private Boolean impactPlayerEnabled = false;
+
+    // Powerplay
     private Integer powerplayStartOver;
+
     private Integer powerplayEndOver;
 
-    // current match state
-    private Integer currentInnings;
-    private Integer currentOver;
+    // Current Match State
+    @Builder.Default
+    private Integer currentInnings = 1;
+
+    @Builder.Default
+    private Integer currentOver = 0;
 
     // Result
+    @Column(length = 500)
     private String resultText;
+
     private String winnerTeamName;
 
-    // audit
+    /*
+     * Match Squads
+     */
+    @OneToMany(
+            mappedBy = "match",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @JsonIgnore
+    @Builder.Default
+    private List<MatchSquad> squads = new ArrayList<>();
+
+    /*
+     * Audit Fields
+     */
+    @CreationTimestamp
+    @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    @UpdateTimestamp
     private LocalDateTime updatedAt;
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FaArrowLeft, FaEdit, FaTrophy } from "react-icons/fa";
-import { getAllTeamsOfTournament } from "../services/api";
+import { getAllTeamsOfTournament, getAllTournaments, getTournamentById } from "../services/api";
 
 export default function TournamentDetailsPage() {
   const { id } = useParams();
@@ -20,10 +20,9 @@ export default function TournamentDetailsPage() {
       const data = await getAllTeamsOfTournament(id);
       console.log(data);
       setTeams(data || []);
-
-      if (data && data.length > 0) {
-        setTournament(data[0].tournament);
-      }
+      const tour = await getTournamentById(id);
+      console.log(tour)
+      setTournament(tour);
     } catch (error) {
       console.error(error);
       alert("Failed to load tournament");

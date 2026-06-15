@@ -12,7 +12,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name="players")
+@Table(
+        name = "players",
+        indexes = {
+                @Index(name = "idx_player_team", columnList = "team_id"),
+                @Index(name = "idx_player_name", columnList = "fullName"),
+                @Index(name = "idx_player_role", columnList = "role"),
+                @Index(name = "idx_player_active", columnList = "active")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -24,65 +32,119 @@ public class Player {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true)
     private String externalPlayerId;
 
-    @Column(nullable=false)
+    @Column(nullable = false, length = 100)
     private String fullName;
 
+    @Column(length = 50)
     private String shortName;
 
     private Integer jerseyNumber;
 
+    private String photoUrl;
+
     private LocalDate dateOfBirth;
 
+    @Column(length = 50)
     private String nationality;
 
-
     /*
-      Batter, Bowler, All Rounder, WK
+     * BATTER, BOWLER, ALL_ROUNDER, WICKET_KEEPER
      */
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private PlayerRole role;
-
 
     @Enumerated(EnumType.STRING)
     private BattingStyle battingStyle;
 
-
     @Enumerated(EnumType.STRING)
     private BowlingStyle bowlingStyle;
 
+    @Builder.Default
+    private Boolean captain = false;
 
-    private Boolean captain;
+    @Builder.Default
+    private Boolean wicketKeeper = false;
 
-    private Boolean wicketKeeper;
     private Integer battingOrder;
 
-    private Boolean active;
+    @Builder.Default
+    private Boolean active = true;
+
     /*
-       Player belongs to one team
+     * Current Team
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="team_id")
+    @JoinColumn(name = "team_id")
     @JsonIgnore
     private Team team;
 
     /*
-      Player can appear in many match squads
+     * Match Squads
      */
-    @OneToMany(mappedBy = "player")
+    @OneToMany(
+            mappedBy = "player",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
     @JsonIgnore
+    @Builder.Default
     private List<MatchSquad> matchSquads = new ArrayList<>();
 
+    /*
+     * Tournament Batting Stats
+     */
+    @OneToMany(
+            mappedBy = "player",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @JsonIgnore
+    @Builder.Default
+    private List<BatterStats> batterStats = new ArrayList<>();
 
-    // Career stats (optional)
-    private Integer matchesPlayed;
+    /*
+     * Tournament Bowling Stats
+     */
+    @OneToMany(
+            mappedBy = "player",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @JsonIgnore
+    @Builder.Default
+    private List<BowlerStats> bowlerStats = new ArrayList<>();
 
-    private Integer runs;
+    /*
+     * Tournament Fielding Stats
+     */
+    @OneToMany(
+            mappedBy = "player",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @JsonIgnore
+    @Builder.Default
+    private List<FielderTournamentStats> fieldingStats = new ArrayList<>();
 
-    private Integer wickets;
+    /*
+     * Career Statistics
+     */
+    @Builder.Default
+    private Integer matchesPlayed = 0;
 
-    private Double battingAverage;
+    @Builder.Default
+    private Integer runs = 0;
 
-    private Double bowlingAverage;
+    @Builder.Default
+    private Integer wickets = 0;
+
+    @Builder.Default
+    private Double battingAverage = 0.0;
+
+    @Builder.Default
+    private Double bowlingAverage = 0.0;
 }

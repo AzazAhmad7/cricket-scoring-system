@@ -1,7 +1,9 @@
 package com.cricket.scoring.services.Impl;
 
 import com.cricket.scoring.dtos.TeamDTO;
+import com.cricket.scoring.entities.Player;
 import com.cricket.scoring.entities.Team;
+import com.cricket.scoring.exceptions.RuntimeConflictException;
 import com.cricket.scoring.repositories.TeamRepository;
 import com.cricket.scoring.services.TeamService;
 import lombok.Builder;
@@ -51,6 +53,12 @@ public class TeamServiceImpl implements TeamService {
     @Override
     public void deleteTeam(Long teamId) {
         Team team = teamRepository.findById(teamId).orElseThrow(() -> new ResourceAccessException("Team not found with id " + teamId));
+        if (!team.getPlayers().isEmpty()) {
+            throw new RuntimeConflictException(
+                    "Team contains players. Remove or transfer players first."
+            );
+        }
+
         teamRepository.delete(team);
     }
 

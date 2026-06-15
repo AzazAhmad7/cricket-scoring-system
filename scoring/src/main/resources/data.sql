@@ -280,7 +280,7 @@ INSERT INTO players (full_name, short_name, role, batting_style, bowling_style, 
 ('Naman Tiwari',         'N Tiwari',  'BOWLER',        'RIGHT_HAND_BAT', 'RIGHT_ARM_FAST',       10, false, false, true),
 ('Prince Yadav',         'P Yadav',   'BOWLER',        'RIGHT_HAND_BAT', 'RIGHT_ARM_FAST',       10, false, false, true);
 
-INSERT INTO tournament (
+INSERT INTO tournaments (
     id,
     name,
     location,

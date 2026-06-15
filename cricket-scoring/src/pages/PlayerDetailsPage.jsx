@@ -4,6 +4,7 @@ import {
   getPlayerById,
   getAllTeams,
   assignTeamToPlayer,
+  deAssignTeamFromPlayer,
 } from "../services/api";
 
 export default function PlayerDetailsPage() {
@@ -68,6 +69,22 @@ export default function PlayerDetailsPage() {
       alert("Failed to assign team");
     }
   };
+  const deAssignTeam = async () => {
+    if (!player.teamDTO) {
+      alert("Player does not belongs to any team");
+      return;
+    }
+    try {
+      await deAssignTeamFromPlayer(id);
+
+      await loadPlayer();
+
+      alert("Team De-assigned successfully");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to assign team");
+    }
+  };
 
   if (!player) {
     return (
@@ -88,12 +105,21 @@ export default function PlayerDetailsPage() {
             <p className="text-slate-500 mt-2">{player.shortName}</p>
           </div>
 
-          <button
-            onClick={openAssignModal}
-            className="bg-blue-600 text-white px-5 py-3 rounded-xl hover:bg-blue-700 transition"
-          >
-            Assign Team
-          </button>
+          <div>
+            <button
+              onClick={openAssignModal}
+              className="bg-blue-600 text-white px-5 py-3 rounded-xl hover:bg-blue-700 transition"
+            >
+              Assign Team
+            </button>
+            <span className="p-1"></span>
+            <button
+              onClick={deAssignTeam}
+              className="bg-red-600 text-white px-5 py-3 rounded-xl hover:bg-red-700 transition"
+            >
+              De-Assign Team
+            </button>
+          </div>
         </div>
 
         {/* Team Card */}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { getAllTeams, deleteTeam } from "../services/api";
+import { getAllTeams, deleteTeam, handleApiError } from "../services/api";
 
 export default function TeamsListPage() {
   const navigate = useNavigate();
@@ -39,7 +39,7 @@ export default function TeamsListPage() {
 
       alert("Team deleted successfully");
     } catch (err) {
-      console.error(err);
+      handleApiError(err);
       alert("Failed to delete team");
     }
   };

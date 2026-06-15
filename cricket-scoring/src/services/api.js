@@ -155,7 +155,14 @@ export const updatePlayer = async (playerId, request) => {
 };
 
 export const assignTeamToPlayer = async (playerId, teamId) => {
-  const response = await axios.put(`${API}/players/${playerId}/teams/${teamId}`);
+  const response = await axios.put(
+    `${API}/players/${playerId}/teams/${teamId}`,
+  );
+
+  return response.data;
+};
+export const deAssignTeamFromPlayer = async (playerId) => {
+  const response = await axios.put(`${API}/players/${playerId}/remove`);
 
   return response.data;
 };

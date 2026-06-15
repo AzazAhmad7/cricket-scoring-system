@@ -5,6 +5,7 @@ import com.cricket.scoring.entities.Team;
 import com.cricket.scoring.entities.enums.BattingStyle;
 import com.cricket.scoring.entities.enums.BowlingStyle;
 import com.cricket.scoring.entities.enums.PlayerRole;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -38,4 +39,17 @@ public class PlayerDTO {
     private Integer matchesPlayed;
     private Integer runs;
     private Integer wickets;
+
+
+    private String externalPlayerId;
+
+    private Integer jerseyNumber;
+
+    private LocalDate dateOfBirth;
+
+    private String nationality;
+
+    private Double battingAverage;
+
+    private Double bowlingAverage;
 }
